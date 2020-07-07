@@ -181,9 +181,23 @@ namespace DynamicsAdapter.Web.PersonSearch
                 }
 
             }
-           
 
-            await _searchRequestService.SaveBatch(ssg_person, list.ToArray(), _cancellationToken);
+            List<RelatedPersonEntity> rplist = new List<RelatedPersonEntity>();
+            if (_foundPerson.RelatedPersons != null)
+            {
+                _logger.LogDebug($"Attempting to create found related persons records for SearchRequest[{_searchRequest.SearchRequestId}]");
+
+                foreach (var relatedPerson in _foundPerson.RelatedPersons)
+                {
+                    RelatedPersonEntity n = _mapper.Map<RelatedPersonEntity>(relatedPerson);
+                    n.SearchRequest = _searchRequest;
+                    n.InformationSource = _providerDynamicsID;
+                   // n.Person = _returnedPerson;
+                    rplist.Add(n);
+                }
+            }
+
+            await _searchRequestService.SaveBatch(ssg_person, list.ToArray(), rplist.ToArray(), _cancellationToken);
             
         }
 
@@ -199,7 +213,7 @@ namespace DynamicsAdapter.Web.PersonSearch
                     IdentifierEntity identifier = _mapper.Map<IdentifierEntity>(matchFoundPersonId);
                     identifier.SearchRequest = _searchRequest;
                     identifier.InformationSource = _providerDynamicsID;
-                    identifier.Person = _returnedPerson;
+                    //identifier.Person = _returnedPerson;
                     SSG_Identifier newIdentifier = await _searchRequestService.CreateIdentifier(identifier, _cancellationToken);
                     await CreateResultTransaction(newIdentifier, newIdentifier == null? identifier:null);
                 }

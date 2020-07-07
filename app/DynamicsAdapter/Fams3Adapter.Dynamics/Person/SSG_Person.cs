@@ -65,6 +65,8 @@ namespace Fams3Adapter.Dynamics.Person
 
         [JsonProperty("ssg_complexion")]
         public string Complexion { get; set; }
+
+     
     }
 
     public class SSG_Person : PersonEntity

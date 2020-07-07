@@ -42,7 +42,7 @@ namespace Fams3Adapter.Dynamics.SearchRequest
         Task<SSG_InvolvedParty> CreateInvolvedParty(SSG_InvolvedParty involvedParty, CancellationToken cancellationToken);
         Task<SSG_SearchRequestResultTransaction> CreateTransaction(SSG_SearchRequestResultTransaction transaction, CancellationToken cancellationToken);
 
-        Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers, CancellationToken cancellationToken);
+        Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers, RelatedPersonEntity[] relatedPersons, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ namespace Fams3Adapter.Dynamics.SearchRequest
             }
         }
 
-        public async Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers , CancellationToken cancellationToken)
+        public async Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers , RelatedPersonEntity[] relatedPersons, CancellationToken cancellationToken)
         {
             try
             {
@@ -119,16 +119,25 @@ namespace Fams3Adapter.Dynamics.SearchRequest
                .InsertEntryAsync(cancellationToken);
                 foreach (var identifier in identifiers)
                 {
-                    identifier.Person = (SSG_Person) person;
+                    identifier.PersonEntity =  person;
                     oDataBatch += c => c
                     .For<SSG_Identifier>()
                     .Set(identifier)
                     .InsertEntryAsync();
                 }
-               await  oDataBatch.ExecuteAsync(cancellationToken);
+
+                foreach (var rperson in relatedPersons)
+                {
+                    rperson.PersonEntity = person;
+                    oDataBatch += c => c
+                    .For<SSG_Identity>()
+                    .Set(rperson)
+                    .InsertEntryAsync();
+                }
+                await  oDataBatch.ExecuteAsync(cancellationToken);
                // return await this._oDataClient.For<SSG_Person>().Set(person).InsertEntryAsync(cancellationToken);
             }
-            catch {
+            catch (Exception ex){
                 //if (IsDuplicateFoundException(ex))
                 //{
                 //    string hashData = person.DuplicateDetectHash;
@@ -137,7 +146,7 @@ namespace Fams3Adapter.Dynamics.SearchRequest
                 //}
                 //else
                 //{
-                //    throw ex;
+                    throw ex;
                 //}
             }
         }

@@ -28,8 +28,10 @@ namespace Fams3Adapter.Dynamics.Identifier
         [JsonProperty("ssg_SearchRequest")]
         public virtual SSG_SearchRequest SearchRequest { get; set; }
 
-        [JsonProperty("ssg_PersonId")]
-        public virtual SSG_Person Person { get; set; }
+ 
+
+    
+        public virtual PersonEntity PersonEntity { get; set; }
 
         [JsonProperty("ssg_informationsourcetext")]
         public int? InformationSource { get; set; }

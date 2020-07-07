@@ -58,8 +58,9 @@ namespace DynamicsAdapter.Web.PersonSearch
                 {
                     _logger.LogInformation("Received Person search completed event");
                     var cts = new CancellationTokenSource();
-                    SSG_SearchApiRequest request = await _register.GetSearchApiRequest(key);
+                    SSG_SearchApiRequest request = new SSG_SearchApiRequest();// await _register.GetSearchApiRequest(key);
                     //update completed event
+                    request.SearchApiRequestId = Guid.Parse("7DC11F63-B4BF-EA11-B81B-00505683FBF4"); 
                     var searchApiEvent = _mapper.Map<SSG_SearchApiEvent>(personCompletedEvent);
                     _logger.LogDebug($"Attempting to create a new event for SearchApiRequest");
                     await _searchApiRequestService.AddEventAsync(request.SearchApiRequestId, searchApiEvent, cts.Token);

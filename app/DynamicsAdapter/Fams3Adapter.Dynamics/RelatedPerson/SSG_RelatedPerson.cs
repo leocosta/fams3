@@ -28,6 +28,9 @@ namespace Fams3Adapter.Dynamics.RelatedPerson
         [JsonProperty("ssg_personthirdgivenname")]
         public string ThirdGivenName { get; set; }
 
+
+        public virtual PersonEntity PersonEntity { get; set; }
+
         [JsonProperty("ssg_personrelationshipcategorytext")]
         public int? Type { get; set; }
 
