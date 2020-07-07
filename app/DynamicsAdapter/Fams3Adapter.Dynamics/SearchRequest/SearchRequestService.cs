@@ -41,6 +41,8 @@ namespace Fams3Adapter.Dynamics.SearchRequest
         Task<SSG_SimplePhoneNumber> CreateSimplePhoneNumber(SSG_SimplePhoneNumber phone, CancellationToken cancellationToken);
         Task<SSG_InvolvedParty> CreateInvolvedParty(SSG_InvolvedParty involvedParty, CancellationToken cancellationToken);
         Task<SSG_SearchRequestResultTransaction> CreateTransaction(SSG_SearchRequestResultTransaction transaction, CancellationToken cancellationToken);
+
+        Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -49,12 +51,15 @@ namespace Fams3Adapter.Dynamics.SearchRequest
     public class SearchRequestService : ISearchRequestService
     {
         private readonly IODataClient _oDataClient;
+       
         private readonly IDuplicateDetectionService _duplicateDetectService;
+        private  ODataBatch oDataBatch;
 
         public SearchRequestService(IODataClient oDataClient, IDuplicateDetectionService duplicateDetectService)
         {
             this._oDataClient = oDataClient;
             this._duplicateDetectService = duplicateDetectService;
+            oDataBatch = new ODataBatch(_oDataClient);
         }
 
         /// <summary>
@@ -101,6 +106,39 @@ namespace Fams3Adapter.Dynamics.SearchRequest
                 {
                     throw ex;
                 }
+            }
+        }
+
+        public async Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers , CancellationToken cancellationToken)
+        {
+            try
+            {
+                oDataBatch += c => c
+               .For<SSG_Person>()
+               .Set(person)
+               .InsertEntryAsync(cancellationToken);
+                foreach (var identifier in identifiers)
+                {
+                    identifier.Person = (SSG_Person) person;
+                    oDataBatch += c => c
+                    .For<SSG_Identifier>()
+                    .Set(identifier)
+                    .InsertEntryAsync();
+                }
+               await  oDataBatch.ExecuteAsync(cancellationToken);
+               // return await this._oDataClient.For<SSG_Person>().Set(person).InsertEntryAsync(cancellationToken);
+            }
+            catch {
+                //if (IsDuplicateFoundException(ex))
+                //{
+                //    string hashData = person.DuplicateDetectHash;
+                //    SSG_Person p = await this._oDataClient.For<SSG_Person>().Filter(x => x.DuplicateDetectHash == hashData).FindEntryAsync(cancellationToken);
+                //    return p;
+                //}
+                //else
+                //{
+                //    throw ex;
+                //}
             }
         }
 

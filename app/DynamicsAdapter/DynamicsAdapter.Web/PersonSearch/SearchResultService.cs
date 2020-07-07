@@ -18,6 +18,7 @@ using Fams3Adapter.Dynamics.SearchRequest;
 using Fams3Adapter.Dynamics.Vehicle;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -78,6 +79,8 @@ namespace DynamicsAdapter.Web.PersonSearch
             _sourceIdentifier = sourceIdentifier;
             _searchApiRequest = new SSG_SearchApiRequest() { SearchApiRequestId = searchApiRequestId };
             _cancellationToken = cancellationToken;
+
+            await UploadBatch();
 
             _returnedPerson = await UploadPerson();
 
@@ -155,6 +158,33 @@ namespace DynamicsAdapter.Web.PersonSearch
             SSG_Person returnedPerson = await _searchRequestService.SavePerson(ssg_person, _cancellationToken);
             await CreateResultTransaction(returnedPerson);
             return returnedPerson;
+        }
+
+        private async Task UploadBatch()
+        {
+            _logger.LogDebug($"Attempting to create the upload batch person record for SearchRequest[{_searchRequest.SearchRequestId}]");
+            PersonEntity ssg_person = _mapper.Map<PersonEntity>(_foundPerson);
+            ssg_person.SearchRequest = _searchRequest;
+            ssg_person.InformationSource = _providerDynamicsID;
+            List<IdentifierEntity> list = new List<IdentifierEntity>();
+            if (_foundPerson.Identifiers != null)
+            {
+                _logger.LogDebug($"Attempting to create found identifier records for SearchRequest[{_searchRequest.SearchRequestId}]");
+
+                foreach (var matchFoundPersonId in _foundPerson.Identifiers)
+                {
+                    IdentifierEntity identifier = _mapper.Map<IdentifierEntity>(matchFoundPersonId);
+                    identifier.SearchRequest = _searchRequest;
+                    identifier.InformationSource = _providerDynamicsID;
+
+                    list.Add(identifier);
+                }
+
+            }
+           
+
+            await _searchRequestService.SaveBatch(ssg_person, list.ToArray(), _cancellationToken);
+            
         }
 
         private async Task<bool> UploadIdentifiers()

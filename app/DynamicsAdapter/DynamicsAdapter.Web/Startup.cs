@@ -138,6 +138,8 @@ namespace DynamicsAdapter.Web
                  return new ODataClient(settings); 
              });
 
+         
+
             // Add other Services
             services.AddTransient<ITokenService, TokenService>();
             services.AddTransient<ISearchApiRequestService, SearchApiRequestService>();
