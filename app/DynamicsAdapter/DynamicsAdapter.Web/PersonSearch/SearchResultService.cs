@@ -197,7 +197,7 @@ namespace DynamicsAdapter.Web.PersonSearch
                 }
             }
 
-            await _searchRequestService.SaveBatch(ssg_person, list.ToArray(), rplist.ToArray(), _cancellationToken);
+            await _searchRequestService.SaveBatch(ssg_person, list.ToArray(), rplist.ToArray(),_sourceIdentifier,_searchApiRequest,_providerDynamicsID, _cancellationToken);
             
         }
 

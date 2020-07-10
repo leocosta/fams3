@@ -35,6 +35,9 @@ namespace Fams3Adapter.Dynamics.ResultTransaction
         [JsonProperty("ssg_ResultIdentifier")]
         public virtual SSG_Identifier ResultIdentifier { get; set; }
 
+      
+        public virtual IdentifierEntity ResultIdentifierItem { get; set; }
+
         [JsonProperty("ssg_BankingInformation")]
         public virtual SSG_Asset_BankingInformation BankInfo { get; set; }
 
@@ -52,6 +55,9 @@ namespace Fams3Adapter.Dynamics.ResultTransaction
 
         [JsonProperty("ssg_RelatedPerson")]
         public virtual SSG_Identity RelatedPerson { get; set; }
+
+        
+        public virtual RelatedPersonEntity RelatedPersonItem { get; set; }
 
         [JsonProperty("ssg_Vehicle")]
         public virtual SSG_Asset_Vehicle Vehicle { get; set; }

@@ -87,22 +87,23 @@ namespace DynamicsAdapter.Web.Register
         public async Task<SSG_Identifier> GetMatchedSourceIdentifier(PersonalIdentifier identifer, string searchRequestKey)
         {
             SSG_SearchApiRequest searchApiReqeust = await GetSearchApiRequest(searchRequestKey);
-            if (searchApiReqeust == null)
-            {
-                _logger.LogError("Cannot find the searchApiRequest in Redis Cache.");
-                return null;
-            }
-            if (identifer == null)
-            {
-                _logger.LogDebug("source identifier from personfound is null");
-                return null;
-            }
+            //if (searchApiReqeust == null)
+            //{
+            //    _logger.LogError("Cannot find the searchApiRequest in Redis Cache.");
+            //    return null;
+            //}
+            //if (identifer == null)
+            //{
+            //    _logger.LogDebug("source identifier from personfound is null");
+            //    return null;
+            //}
 
             int? type = IDType.IDTypeDictionary.FirstOrDefault(m => m.Value == identifer.Type).Key;
-            return searchApiReqeust.Identifiers.FirstOrDefault(
-                m => m.Identification == identifer.Value
-                     && m.IdentifierType == type);
-        }
+            return new SSG_Identifier { IdentifierId= Guid.Parse("4cb877d9-b9b4-ea11-b81a-00505683fbf4") };
+            //return searchApiReqeust.Identifiers.FirstOrDefault(
+            //    m => m.Identification == identifer.Value
+            //         && m.IdentifierType == type);
+            }
 
         public async Task<bool> RemoveSearchApiRequest(Guid guid)
         {

@@ -11,6 +11,7 @@ using Fams3Adapter.Dynamics.Person;
 using Fams3Adapter.Dynamics.PhoneNumber;
 using Fams3Adapter.Dynamics.RelatedPerson;
 using Fams3Adapter.Dynamics.ResultTransaction;
+using Fams3Adapter.Dynamics.SearchApiRequest;
 using Fams3Adapter.Dynamics.Vehicle;
 using Newtonsoft.Json;
 using Simple.OData.Client;
@@ -42,7 +43,7 @@ namespace Fams3Adapter.Dynamics.SearchRequest
         Task<SSG_InvolvedParty> CreateInvolvedParty(SSG_InvolvedParty involvedParty, CancellationToken cancellationToken);
         Task<SSG_SearchRequestResultTransaction> CreateTransaction(SSG_SearchRequestResultTransaction transaction, CancellationToken cancellationToken);
 
-        Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers, RelatedPersonEntity[] relatedPersons, CancellationToken cancellationToken);
+        Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers, RelatedPersonEntity[] relatedPersons, SSG_Identifier sourceIdentifer, SSG_SearchApiRequest searchApiRequest, int? dataProvider, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -109,7 +110,7 @@ namespace Fams3Adapter.Dynamics.SearchRequest
             }
         }
 
-        public async Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers , RelatedPersonEntity[] relatedPersons, CancellationToken cancellationToken)
+        public async Task SaveBatch(PersonEntity person, IdentifierEntity[] identifiers , RelatedPersonEntity[] relatedPersons, SSG_Identifier sourceIdentifer, SSG_SearchApiRequest searchApiRequest, int? dataProvider, CancellationToken cancellationToken)
         {
             try
             {
@@ -123,7 +124,19 @@ namespace Fams3Adapter.Dynamics.SearchRequest
                     oDataBatch += c => c
                     .For<SSG_Identifier>()
                     .Set(identifier)
-                    .InsertEntryAsync();
+                    .InsertEntryAsync(false);
+
+                    SSG_SearchRequestResultTransaction trans = new SSG_SearchRequestResultTransaction()
+                    {
+                        SourceIdentifier = sourceIdentifer,
+                        SearchApiRequest = searchApiRequest,
+                        InformationSource = dataProvider,
+                        ResultIdentifierItem = identifier
+                    };
+
+                    oDataBatch += c => c
+                    .For<SSG_SearchRequestResultTransaction>()
+                    .Set(trans).InsertEntryAsync(false);
                 }
 
                 foreach (var rperson in relatedPersons)
@@ -132,7 +145,18 @@ namespace Fams3Adapter.Dynamics.SearchRequest
                     oDataBatch += c => c
                     .For<SSG_Identity>()
                     .Set(rperson)
-                    .InsertEntryAsync();
+                    .InsertEntryAsync(false);
+
+                    SSG_SearchRequestResultTransaction trans = new SSG_SearchRequestResultTransaction()
+                    {
+                        SourceIdentifier = sourceIdentifer,
+                        SearchApiRequest = searchApiRequest,
+                        InformationSource = dataProvider,
+                        RelatedPersonItem = rperson
+                    };
+                    oDataBatch += c => c
+                 .For<SSG_SearchRequestResultTransaction>()
+                 .Set(trans).InsertEntryAsync(false);
                 }
                 await  oDataBatch.ExecuteAsync(cancellationToken);
                // return await this._oDataClient.For<SSG_Person>().Set(person).InsertEntryAsync(cancellationToken);
