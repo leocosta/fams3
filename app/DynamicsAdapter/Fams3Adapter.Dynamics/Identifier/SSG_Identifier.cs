@@ -33,6 +33,8 @@ namespace Fams3Adapter.Dynamics.Identifier
 
         [JsonProperty("ssg_informationsourcetext")]
         public int? InformationSource { get; set; }
+
+        public virtual PersonEntity PersonEntity { get; set; }
     }
 
     public class SSG_Identifier : IdentifierEntity
