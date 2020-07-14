@@ -22,6 +22,7 @@ namespace Fams3Adapter.Dynamics.ResultTransaction
         [JsonProperty("ssg_Address")]
         public virtual SSG_Address Address { get; set; }
 
+        public virtual AddressEntity NewAddress { get; set; }
 
         [JsonProperty("ssg_Alias")]
         public virtual SSG_Aliase Name { get; set; }
@@ -29,11 +30,16 @@ namespace Fams3Adapter.Dynamics.ResultTransaction
         [JsonProperty("ssg_Person")]
         public virtual SSG_Person Person { get; set; }
 
+     
+        public virtual PersonEntity NewPerson { get; set; }
+
         [JsonProperty("ssg_SourceIdentifier")]
         public virtual SSG_Identifier SourceIdentifier { get; set; }
 
         [JsonProperty("ssg_ResultIdentifier")]
         public virtual SSG_Identifier ResultIdentifier { get; set; }
+
+        public virtual IdentifierEntity NewResultIdentifier { get; set; }
 
         [JsonProperty("ssg_BankingInformation")]
         public virtual SSG_Asset_BankingInformation BankInfo { get; set; }

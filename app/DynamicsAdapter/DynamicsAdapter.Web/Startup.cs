@@ -131,18 +131,23 @@ namespace DynamicsAdapter.Web
                 .AddHttpMessageHandler<ApiGatewayHandler>();
 
             // Register Odata client
-            services.AddTransient<IODataClient>(provider =>
+            services.AddSingleton<IODataClient>(provider =>
              {
                  var settings = provider.GetRequiredService<ODataClientSettings>();
                  settings.IgnoreUnmappedProperties = true;
                  return new ODataClient(settings); 
              });
-
+            services.AddSingleton(provider => {
+                var settings = provider.GetRequiredService<ODataClientSettings>();
+                settings.IgnoreUnmappedProperties = true;
+                return new ODataBatch(new ODataClient(settings));
+            });
             // Add other Services
             services.AddTransient<ITokenService, TokenService>();
             services.AddTransient<ISearchApiRequestService, SearchApiRequestService>();
             services.AddTransient<ISearchRequestService, SearchRequestService>();
             services.AddSingleton<IDuplicateDetectionService, DuplicateDetectionService>();
+           
 
         }
         /// <summary>

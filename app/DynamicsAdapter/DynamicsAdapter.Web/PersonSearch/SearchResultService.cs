@@ -15,6 +15,7 @@ using Fams3Adapter.Dynamics.RelatedPerson;
 using Fams3Adapter.Dynamics.ResultTransaction;
 using Fams3Adapter.Dynamics.SearchApiRequest;
 using Fams3Adapter.Dynamics.SearchRequest;
+using Fams3Adapter.Dynamics.SearchResult;
 using Fams3Adapter.Dynamics.Vehicle;
 using Microsoft.Extensions.Logging;
 using System;
@@ -39,6 +40,7 @@ namespace DynamicsAdapter.Web.PersonSearch
     {
         private readonly ILogger<SearchResultService> _logger;
         private readonly ISearchRequestService _searchRequestService;
+        private readonly IPersonSearchResultService _personSearchResultService;
         private readonly IMapper _mapper;
 
         private SSG_Person _returnedPerson;
@@ -49,9 +51,10 @@ namespace DynamicsAdapter.Web.PersonSearch
         private Person _foundPerson;
         private CancellationToken _cancellationToken;
 
-        public SearchResultService(ISearchRequestService searchRequestService, ILogger<SearchResultService> logger, IMapper mapper)
+        public SearchResultService(ISearchRequestService searchRequestService, IPersonSearchResultService personSearchResultService, ILogger<SearchResultService> logger, IMapper mapper)
         {
             _searchRequestService = searchRequestService;
+            _personSearchResultService = personSearchResultService;
             _logger = logger;
             _mapper = mapper;
             _returnedPerson = null;

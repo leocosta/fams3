@@ -14,6 +14,7 @@ using Fams3Adapter.Dynamics.PhoneNumber;
 using Fams3Adapter.Dynamics.RelatedPerson;
 using Fams3Adapter.Dynamics.ResultTransaction;
 using Fams3Adapter.Dynamics.SearchRequest;
+using Fams3Adapter.Dynamics.SearchResult;
 using Fams3Adapter.Dynamics.Vehicle;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -30,6 +31,7 @@ namespace DynamicsAdapter.Web.Test.PersonSearch
         private SearchResultService _sut;
         private Mock<ILogger<SearchResultService>> _loggerMock;
         private Mock<ISearchRequestService> _searchRequestServiceMock;
+        private Mock<IPersonSearchResultService> _personSearchResultServiceMock;
         private Person _fakePerson;
 
         private IdentifierEntity _fakePersoneIdentifier;
@@ -63,7 +65,9 @@ namespace DynamicsAdapter.Web.Test.PersonSearch
 
             _loggerMock = new Mock<ILogger<SearchResultService>>();
             _searchRequestServiceMock = new Mock<ISearchRequestService>();
-            _mapper = new Mock<IMapper>();
+            _personSearchResultServiceMock = new Mock<IPersonSearchResultService>();
+
+        _mapper = new Mock<IMapper>();
             var validRequestId = Guid.NewGuid();
 
             var validVehicleId = Guid.NewGuid();
@@ -498,7 +502,7 @@ namespace DynamicsAdapter.Web.Test.PersonSearch
             {                
             }));
 
-            _sut = new SearchResultService(_searchRequestServiceMock.Object, _loggerMock.Object, _mapper.Object);
+            _sut = new SearchResultService(_searchRequestServiceMock.Object, _personSearchResultServiceMock.Object, _loggerMock.Object, _mapper.Object);
 
         }
 

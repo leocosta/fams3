@@ -58,6 +58,8 @@ namespace Fams3Adapter.Dynamics.Address
 
         [JsonProperty("ssg_notes")]
         public string Notes { get; set; }
+
+        public virtual PersonEntity PersonEntity { get; set; }
     }
 
     public class SSG_Address : AddressEntity

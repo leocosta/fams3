@@ -11,21 +11,24 @@ using Fams3Adapter.Dynamics.Person;
 using Fams3Adapter.Dynamics.PhoneNumber;
 using Fams3Adapter.Dynamics.RelatedPerson;
 using Fams3Adapter.Dynamics.ResultTransaction;
+using Fams3Adapter.Dynamics.SearchApiRequest;
 using Fams3Adapter.Dynamics.Vehicle;
+using Microsoft.Extensions.Logging;
 using Simple.OData.Client;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Fams3Adapter.Dynamics.SearchRequest
+namespace Fams3Adapter.Dynamics.SearchResult
 {
     public interface IPersonSearchResultService
     {
-        void CreateIdentifier(IdentifierEntity[] identifiers, CancellationToken cancellationToken);
-        Task<SSG_Address> CreateAddress(AddressEntity address, CancellationToken cancellationToken);
+        void SaveIdentifier(IdentifierEntity[] identifiers, CancellationToken cancellationToken);
+        void SaveAddress(AddressEntity[] address, CancellationToken cancellationToken);
         Task<SSG_PhoneNumber> CreatePhoneNumber(PhoneNumberEntity phoneNumber, CancellationToken cancellationToken);
         Task<SSG_Aliase> CreateName(AliasEntity name, CancellationToken cancellationToken);
         Task<SSG_Identity> CreateRelatedPerson(RelatedPersonEntity name, CancellationToken cancellationToken);
-        Task SavePerson(PersonEntity person, CancellationToken cancellationToken);
+        Task SavePerson(PersonEntity person, SSG_SearchApiRequest searchApiRequest, int? dataProviderId, SSG_Identifier sourceIdentifer, CancellationToken cancellationToken);
         Task<SSG_Employment> CreateEmployment(EmploymentEntity employment, CancellationToken cancellationToken);
         Task<SSG_EmploymentContact> CreateEmploymentContact(SSG_EmploymentContact employmentContact, CancellationToken cancellationToken);
         Task<SSG_Asset_BankingInformation> CreateBankInfo(BankingInformationEntity bankInfo, CancellationToken cancellationToken);
@@ -41,24 +44,47 @@ namespace Fams3Adapter.Dynamics.SearchRequest
     }
     public    class PersonSearchResultService : IPersonSearchResultService
     {
-        private readonly IODataClient _oDataClient;
 
+        private readonly IBatchService _batchService;
         private readonly IDuplicateDetectionService _duplicateDetectService;
-        private ODataBatch oDataBatch;
+        private readonly ILogger<PersonSearchResultService> _logger;
+        private ODataBatch _oDataBatch;
+        private readonly IODataClient _oDataClient;
         private PersonEntity _personToSave;
         private SSG_Person _savedPerson;
+        SSG_Identifier _sourceIdentifer;
+        SSG_SearchApiRequest _searchApiRequest;
+        int? _dataProvider;
 
-        public PersonSearchResultService(IODataClient oDataClient, IDuplicateDetectionService duplicateDetectService)
+        public PersonSearchResultService(IODataClient oDataClient, IBatchService batchService, IDuplicateDetectionService duplicateDetectService, ILogger<PersonSearchResultService> logger)
         {
-            this._oDataClient = oDataClient;
+          
             this._duplicateDetectService = duplicateDetectService;
-            oDataBatch = new ODataBatch(_oDataClient);
+            _batchService = batchService;
+            
+            _oDataClient = oDataClient;
+            _logger = logger;
         }
 
-        public Task<SSG_Address> CreateAddress(AddressEntity address, CancellationToken cancellationToken)
+        public void SaveAddress(AddressEntity[] addresses, CancellationToken cancellationToken)
         {
-            throw new System.NotImplementedException();
-        }
+            foreach (var address in addresses)
+            {
+                address.PersonEntity = _personToSave;
+                _oDataBatch += c => c
+                .For<SSG_Address>()
+                .Set(address)
+                .InsertEntryAsync(false);
+
+                if (_sourceIdentifer != null)
+                {
+                    AddTransaction(new SSG_SearchRequestResultTransaction()
+                    {
+                        NewAddress = address
+                    }, cancellationToken);
+                }
+            }
+        }   
 
         public Task<SSG_AssetOwner> CreateAssetOwner(AssetOwnerEntity owner, CancellationToken cancellationToken)
         {
@@ -85,17 +111,37 @@ namespace Fams3Adapter.Dynamics.SearchRequest
             throw new System.NotImplementedException();
         }
 
-        public void CreateIdentifier(IdentifierEntity[] identifiers, CancellationToken cancellationToken)
+        public void SaveIdentifier(IdentifierEntity[] identifiers, CancellationToken cancellationToken)
         {
             foreach (var identifier in identifiers)
             {
                 identifier.PersonEntity = _personToSave;
-                oDataBatch += c => c
+                _oDataBatch += c => c
                 .For<SSG_Identifier>()
                 .Set(identifier)
                 .InsertEntryAsync(false);
-            }
 
+                if (_sourceIdentifer != null)
+                {
+                   
+                    AddTransaction(new SSG_SearchRequestResultTransaction()
+                    {
+                        NewResultIdentifier = identifier
+                    }, cancellationToken);
+                }
+            }
+        }
+
+        private void AddTransaction( SSG_SearchRequestResultTransaction transaction, CancellationToken cancellationToken)
+        {
+
+            transaction.SourceIdentifier = _sourceIdentifer;
+            transaction.SearchApiRequest = _searchApiRequest;
+            transaction.InformationSource = _dataProvider;
+
+            _oDataBatch += c => c
+              .For<SSG_SearchRequestResultTransaction>()
+              .Set(transaction).InsertEntryAsync(false, cancellationToken);
         }
 
         public Task<SSG_Asset_ICBCClaim> CreateInsuranceClaim(ICBCClaimEntity claim, CancellationToken cancellationToken)
@@ -143,8 +189,16 @@ namespace Fams3Adapter.Dynamics.SearchRequest
             throw new System.NotImplementedException();
         }
 
-        public async Task SavePerson(PersonEntity person, CancellationToken cancellationToken)
+        public async Task SavePerson(PersonEntity person, SSG_SearchApiRequest searchApiRequest,  int? dataProviderId, SSG_Identifier sourceIdentifer, CancellationToken cancellationToken)
         {
+            
+            _searchApiRequest = searchApiRequest;
+            _dataProvider = dataProviderId;
+            _sourceIdentifer = sourceIdentifer;
+            _logger.LogDebug($"Attempting to add found person to batch  records for SearchRequest[{_searchApiRequest.SearchRequestId}]");
+
+            _logger.LogDebug($"Checking if found person exists - Person -  {person.FirstName}");
+
             person.DuplicateDetectHash = await _duplicateDetectService.GetDuplicateDetectHashData(person);
             string hashData = person.DuplicateDetectHash;
             var p = await this._oDataClient.For<SSG_Person>()
@@ -153,11 +207,19 @@ namespace Fams3Adapter.Dynamics.SearchRequest
 
             if (p == null)
             {
-                oDataBatch += c => c
+                _oDataBatch += c => c
                 .For<SSG_Person>()
                 .Set(person)
-                .InsertEntryAsync(cancellationToken);
+                .InsertEntryAsync(false);
 
+
+                if (_sourceIdentifer != null)
+                {
+                    AddTransaction(new SSG_SearchRequestResultTransaction()
+                    {
+                        NewPerson = person
+                    }, cancellationToken);
+                }
                 _personToSave = person;
             }
             else
