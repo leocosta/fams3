@@ -45,23 +45,24 @@ namespace Fams3Adapter.Dynamics.SearchResult
     public    class PersonSearchResultService : IPersonSearchResultService
     {
 
-        private readonly IBatchService _batchService;
+        
         private readonly IDuplicateDetectionService _duplicateDetectService;
         private readonly ILogger<PersonSearchResultService> _logger;
-        private ODataBatch _oDataBatch;
+        private  ODataBatch _oDataBatch;
         private readonly IODataClient _oDataClient;
+        private readonly IBatchEngine _batchEngine;
         private PersonEntity _personToSave;
         private SSG_Person _savedPerson;
         SSG_Identifier _sourceIdentifer;
         SSG_SearchApiRequest _searchApiRequest;
         int? _dataProvider;
 
-        public PersonSearchResultService(IODataClient oDataClient, IBatchService batchService, IDuplicateDetectionService duplicateDetectService, ILogger<PersonSearchResultService> logger)
+        public PersonSearchResultService(IODataClient oDataClient,ODataBatch oDataBatch, IBatchEngine batch, IDuplicateDetectionService duplicateDetectService, ILogger<PersonSearchResultService> logger)
         {
           
-            this._duplicateDetectService = duplicateDetectService;
-            _batchService = batchService;
-            
+            _duplicateDetectService = duplicateDetectService;
+            _batchEngine = batch;
+            _oDataBatch = oDataBatch;
             _oDataClient = oDataClient;
             _logger = logger;
         }
