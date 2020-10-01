@@ -97,7 +97,12 @@ namespace DynamicsAdapter.Web.Test.Mapping
                 }.ToArray(),
                 SSG_SearchRequests = new List<SSG_SearchRequest>
                 {
-                    new SSG_SearchRequest{Agency = new SSG_Agency{AgencyCode="FMEP" } }
+                    new SSG_SearchRequest{
+                        Agency = new SSG_Agency{AgencyCode="FMEP" },
+                        ApplicantFirstName="applicantFirst",
+                        ApplicantLastName="applicantLast",
+                        ApplicantSIN="applicantSin"
+                    }
                 }.ToArray(),
                 SSG_Asset_Investments = new List<SSG_Asset_Investment>
                 {
@@ -121,8 +126,8 @@ namespace DynamicsAdapter.Web.Test.Mapping
                 }.ToArray(),
             };
             Person person = _mapper.Map<Person>(response);
-            Assert.AreEqual(1, person.Names.Count);
-            Assert.AreEqual(1, person.Identifiers.Count);
+            Assert.AreEqual(2, person.Names.Count);
+            Assert.AreEqual(2, person.Identifiers.Count);
             Assert.AreEqual(1, person.Addresses.Count);
             Assert.AreEqual(1, person.Phones.Count);
             Assert.AreEqual(1, person.Investments.Count);

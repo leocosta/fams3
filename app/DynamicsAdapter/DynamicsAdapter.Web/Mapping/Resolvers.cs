@@ -2,6 +2,7 @@ using AutoMapper;
 using Fams3Adapter.Dynamics;
 using Fams3Adapter.Dynamics.Employment;
 using Fams3Adapter.Dynamics.Identifier;
+using Fams3Adapter.Dynamics.Name;
 using Fams3Adapter.Dynamics.OptionSets.Models;
 using Fams3Adapter.Dynamics.Pension;
 using Fams3Adapter.Dynamics.RealEstate;
@@ -283,6 +284,56 @@ namespace DynamicsAdapter.Web.Mapping
                 return owners;
             }
             return null;
+        }
+    }
+
+    public class NamesResponseResolver : IValueResolver<SSG_SearchRequestResponse, Person, ICollection<Name>>
+    {
+        public ICollection<Name> Resolve(SSG_SearchRequestResponse source, Person destination, ICollection<Name> destMember, ResolutionContext context)
+        {
+            List<Name> names = new List<Name>();
+
+            if (!(string.IsNullOrEmpty(source.SSG_SearchRequests[0]?.ApplicantFirstName)
+                && string.IsNullOrEmpty(source.SSG_SearchRequests[0]?.ApplicantLastName)
+                ))
+            {
+                names.Add(new Name
+                {
+                    FirstName = source.SSG_SearchRequests[0]?.ApplicantFirstName,
+                    LastName = source.SSG_SearchRequests[0]?.ApplicantLastName,
+                    Owner = OwnerType.Applicant
+                });
+            }
+
+            foreach (SSG_Aliase ssg_name in source.SSG_Aliases)
+            {
+                names.Add(context.Mapper.Map<Name>(ssg_name));
+            }
+            return names;
+        }
+    }
+
+    public class IdentifiersResponseResolver : IValueResolver<SSG_SearchRequestResponse, Person, ICollection<PersonalIdentifier>>
+    {
+        public ICollection<PersonalIdentifier> Resolve(SSG_SearchRequestResponse source, Person destination, ICollection<PersonalIdentifier> destMember, ResolutionContext context)
+        {
+            List<PersonalIdentifier> identifiers = new List<PersonalIdentifier>();
+
+            if (!string.IsNullOrEmpty(source.SSG_SearchRequests[0]?.ApplicantSIN))
+            {
+                identifiers.Add(new PersonalIdentifier
+                {
+                    Value = source.SSG_SearchRequests[0]?.ApplicantSIN,
+                    Type = PersonalIdentifierType.SocialInsuranceNumber,
+                    Owner = OwnerType.Applicant
+                });
+            }
+
+            foreach (SSG_Identifier id in source.SSG_Identifiers)
+            {
+                identifiers.Add(context.Mapper.Map<PersonalIdentifier>(id));
+            }
+            return identifiers;
         }
     }
 }
