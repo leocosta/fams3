@@ -175,7 +175,14 @@ namespace SearchApi.Web.DeepSearch
 
         private async Task<IEnumerable<string>> SearchDeepSearchKeys(string searchRequestKey)
         {
-            return await _cacheService.SearchKeys($"deepsearch-{searchRequestKey}*");
+            try
+            {
+                return await _cacheService.SearchKeys($"deepsearch-{searchRequestKey}*");
+            }
+            catch
+            {
+                return new List<string>().AsEnumerable();
+            }
         }
 
         public async Task<bool> IsWaveSearchReadyToFinalize(string searchRequestKey)
