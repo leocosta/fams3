@@ -26,5 +26,7 @@ namespace SearchApi.Web.Notifications
     {
         public string Name {get;set;}
         public SearchSpeedType SearchSpeedType { get; set; } = SearchSpeedType.Fast;
+
+        public TransferMode Mode { get; set; } = TransferMode.HTTP;
     }
 }

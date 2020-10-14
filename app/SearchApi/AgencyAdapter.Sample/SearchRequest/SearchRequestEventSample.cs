@@ -32,6 +32,8 @@ namespace AgencyAdapter.Sample.SearchRequest
         public string Name { get; set; }
 
         public SearchSpeedType SearchSpeedType { get; set; }
+
+        public TransferMode Mode { get; set; }
     }
 
     public static class FakeSearchrequestResponseBuilder

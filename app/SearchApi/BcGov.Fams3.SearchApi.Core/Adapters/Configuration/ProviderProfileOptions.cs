@@ -13,5 +13,7 @@ namespace BcGov.Fams3.SearchApi.Core.Adapters.Configuration
         public string Name { get; set; }
 
         public SearchSpeedType SearchSpeedType { get; set; }
+
+        public TransferMode Mode { get; set; }
     }
 }

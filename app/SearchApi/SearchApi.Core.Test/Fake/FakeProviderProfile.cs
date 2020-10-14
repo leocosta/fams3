@@ -8,5 +8,7 @@ namespace SearchApi.Core.Test.Fake
         public string Name { get; set; } = "SampleProvider";
 
         public SearchSpeedType SearchSpeedType { get; set; } = SearchSpeedType.Fast;
+
+        public TransferMode Mode { get; set; } = TransferMode.HTTP;
     }
 }

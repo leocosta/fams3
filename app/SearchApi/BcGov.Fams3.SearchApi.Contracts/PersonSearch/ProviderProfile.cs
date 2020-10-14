@@ -9,5 +9,13 @@ namespace BcGov.Fams3.SearchApi.Contracts.PersonSearch
     {
         string Name { get; }
         SearchSpeedType SearchSpeedType { get; }
+
+        TransferMode Mode { get; }
+    }
+
+    public enum TransferMode
+    {
+        FTP,
+        HTTP
     }
 }

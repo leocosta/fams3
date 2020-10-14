@@ -39,19 +39,18 @@ namespace SearchApi.Web.Controllers
             DateOfBirth = dateOfBirth;
             Identifiers = identifiers;
             Phones = phones;
-            this.Names = names;
-            this.Addresses = addresses;
-            this.Employments = employments;         
-            this.RelatedPersons = relatedPersons;
-            this.DataProviders = dataProviders;
-            this.SearchRequestKey = searchRequestKey;
+            Names = names;
+            Addresses = addresses;
+            Employments = employments;         
+            RelatedPersons = relatedPersons;
+            DataProviders = dataProviders;
+            SearchRequestKey = searchRequestKey;
         }
 
     }
 
     public class DataProvider : ProviderProfile
     {
-
         public DataProvider()
         {
             Completed = false;
@@ -65,6 +64,7 @@ namespace SearchApi.Web.Controllers
 
         public SearchSpeedType SearchSpeedType { get; set; }
 
+        public TransferMode Mode { get; set; }
     }
 
   

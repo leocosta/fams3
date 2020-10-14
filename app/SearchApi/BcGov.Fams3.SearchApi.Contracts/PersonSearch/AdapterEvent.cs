@@ -3,5 +3,8 @@
     public interface AdapterEvent
     {
         ProviderProfile ProviderProfile { get; }
+    
+        
     }
+   
 }
