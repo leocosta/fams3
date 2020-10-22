@@ -16,6 +16,9 @@ namespace Fams3Adapter.Dynamics.RfiService
         Task<IEnumerable<SSG_RfiMessage>> GetAllReadyForSendAsync(CancellationToken cancellationToken, SSG_DataProvider[] dataProviders);
         Task<IEnumerable<SSG_RfiMessage>> GetAllValidFailedSendRequest(CancellationToken cancellationToken, SSG_DataProvider[] dataProviders);
         Task<IEnumerable<SSG_DataProvider>> GetDataProvidersList(CancellationToken cancellationToken);
+        Task<SSG_RfiMessageEvents> AddEventAsync(Guid searchApiRequestId, SSG_RfiMessageEvents searchApiEvent,
+            CancellationToken cancellationToken);
+
         Task<SSG_RfiMessage> MarkInProgress(Guid searchApiRequestId, CancellationToken cancellationToken);
         Task<SSG_RfiMessage> MarkComplete(Guid searchApiRequestId, CancellationToken cancellationToken);
 	}
@@ -30,6 +33,11 @@ namespace Fams3Adapter.Dynamics.RfiService
             this._oDataClient = oDataClient;
             _logger = logger;
         }
+
+		public Task<SSG_RfiMessageEvents> AddEventAsync(Guid searchApiRequestId, SSG_RfiMessageEvents searchApiEvent, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
 
 		public async Task<IEnumerable<SSG_RfiMessage>> GetAllReadyForSendAsync(CancellationToken cancellationToken, SSG_DataProvider[] dataProviders)
 		{           

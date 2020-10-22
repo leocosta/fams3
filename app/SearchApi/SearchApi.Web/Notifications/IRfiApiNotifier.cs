@@ -1,0 +1,12 @@
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace SearchApi.Web.Notifications
+{
+
+	public interface IRfiApiNotifier<T>
+    {
+
+        Task NotifyEventAsync(string searchRequestKey, T notificationStatus,string eventName, CancellationToken cancellationToken);
+    }
+}
