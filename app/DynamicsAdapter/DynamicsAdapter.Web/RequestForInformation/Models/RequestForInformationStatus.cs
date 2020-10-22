@@ -1,6 +1,6 @@
 using System;
 
-namespace DynamicsAdapter.Web.RequestForInformation.Models
+namespace DynamicsAdapter.Web.Rfi.Models
 {
     public abstract class RequestForInformationStatus
     {

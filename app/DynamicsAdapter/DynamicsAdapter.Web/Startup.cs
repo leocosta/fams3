@@ -7,6 +7,7 @@ using DynamicsAdapter.Web.Health;
 using DynamicsAdapter.Web.Infrastructure;
 using DynamicsAdapter.Web.PersonSearch;
 using DynamicsAdapter.Web.Register;
+using DynamicsAdapter.Web.Rfi;
 using DynamicsAdapter.Web.SearchAgency;
 using DynamicsAdapter.Web.SearchAgency.Models;
 using DynamicsAdapter.Web.SearchAgency.Validation;

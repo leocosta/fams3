@@ -6,10 +6,10 @@ namespace SearchApi.Web.Notifications
 {
 	public class RfiFinalizedEvent : RequestForInformationFailedEvent
 	{
-		public string Message => throw new NotImplementedException();
+		public string Message {get;set;}
 
-		public Guid Id => throw new NotImplementedException();
+		public Guid Id {get;set;}
 
-		public DateTime TimeStamp => throw new NotImplementedException();
+		public DateTime TimeStamp {get;set;}
 	}
 }

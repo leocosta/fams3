@@ -56,7 +56,7 @@ namespace SearchApi.Web.Notifications
                     {
                         RequestForInformationEvent finalizedSearch = new RfiFinalizedEvent()
                         {
-                            Message = "RFI Failed"
+                            Message = "Not implemented yet"
                         };
                         content = new StringContent(JsonConvert.SerializeObject(finalizedSearch));
                     }

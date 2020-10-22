@@ -1,7 +1,7 @@
 using AutoMapper;
 using DynamicsAdapter.Web.Register;
+using DynamicsAdapter.Web.SearchRequest;
 using Fams3Adapter.Dynamics.RfiService;
-using Fams3Adapter.Dynamics.SearchApiRequest;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using System;
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DynamicsAdapter.Web.SearchRequest
+namespace DynamicsAdapter.Web.Rfi
 {
 	/// <summary>
 	/// The SearchRequestJob orchestrates dyanmics search request.
@@ -18,7 +18,7 @@ namespace DynamicsAdapter.Web.SearchRequest
 	[DisallowConcurrentExecution]
     public class RequestForInformationJob : IJob
     {
-        private readonly ILogger<SearchRequestJob> _logger;
+        private readonly ILogger<RequestForInformationJob> _logger;
 
         private readonly IRfiSubmittalService _rfiService;
         private readonly ISearchApiClient _searchApiClient;
@@ -26,7 +26,7 @@ namespace DynamicsAdapter.Web.SearchRequest
         private readonly IMapper _mapper;
 
         public RequestForInformationJob(IRfiSubmittalService rfiSubmittalService,
-            ILogger<SearchRequestJob> logger,
+            ILogger<RequestForInformationJob> logger,
 			ISearchRequestRegister register,
             ISearchApiClient searchApiClient,
             IMapper mapper)

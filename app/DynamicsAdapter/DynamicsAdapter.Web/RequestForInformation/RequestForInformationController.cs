@@ -1,27 +1,21 @@
 ﻿using AutoMapper;
 using DynamicsAdapter.Web.Register;
-using DynamicsAdapter.Web.RequestForInformation.Models;
 using Fams3Adapter.Dynamics;
 using Fams3Adapter.Dynamics.DataProvider;
-using Fams3Adapter.Dynamics.Identifier;
 using Fams3Adapter.Dynamics.RfiService;
-using Fams3Adapter.Dynamics.SearchApiEvent;
 using Fams3Adapter.Dynamics.SearchApiRequest;
-using Fams3Adapter.Dynamics.SearchRequest;
-using Fams3Adapter.Dynamics.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NSwag.Annotations;
 using Serilog.Context;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DynamicsAdapter.Web.RequestForInformation
+namespace DynamicsAdapter.Web.Rfi
 {
-    [Route("[controller]")]
+	[Route("[controller]")]
     [ApiController]
     public class RequestForInformationController : ControllerBase
     {
