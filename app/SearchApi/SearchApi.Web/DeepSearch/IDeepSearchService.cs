@@ -213,25 +213,23 @@ namespace SearchApi.Web.DeepSearch
                 {
                     if (wave.NewParameter != null)
                     {
-                        foreach (var person in wave.NewParameter)
+                        Person p = MergeIdentifiersFromAllNewParameter(wave);
+                        if (p.Identifiers != null)
                         {
-                            await _deepSearchDispatcher.StartAnotherWave(searchRequestKey, wave, person, wave.NumberOfRetries, wave.TimeBetweenRetries);
+                            await _deepSearchDispatcher.StartAnotherWave(searchRequestKey,
+                                                                         wave,
+                                                                         p,
+                                                                         wave.NumberOfRetries,
+                                                                         wave.TimeBetweenRetries);
+                        }
+                        else
+                        {
+                            await NoSearchButIncremementWave(searchRequestKey, wave);
                         }
                     }
                     else
                     {
-                        string cacheKey = searchRequestKey.DeepSearchKey(wave.DataPartner);
-                        var waveMetaData = await _cacheService.Get(cacheKey);
-                        if (waveMetaData != null)
-                        {
-                            _logger.Log(LogLevel.Information, $"{searchRequestKey} has an active wave but no new parameter");
-                            WaveSearchData metaData = JsonConvert.DeserializeObject<WaveSearchData>(waveMetaData);
-                            _logger.Log(LogLevel.Information, $"{searchRequestKey} Current Metadata Wave : {metaData.CurrentWave}");
-                            metaData.CurrentWave++;
-                            metaData.NewParameter = null;
-                            await _cacheService.Save(cacheKey, metaData);
-                            _logger.Log(LogLevel.Information, $"{searchRequestKey} New wave {metaData.CurrentWave} saved");
-                        }
+                        await NoSearchButIncremementWave(searchRequestKey, wave);
                     }
                 }
                 return false;
@@ -240,6 +238,35 @@ namespace SearchApi.Web.DeepSearch
 
           
             
+        }
+
+        private static Person MergeIdentifiersFromAllNewParameter(WaveSearchData wave)
+        {
+            Person p = new Person();
+            List<PersonalIdentifier> identifiers = new List<PersonalIdentifier>();
+            foreach (var person in wave.NewParameter)
+            {
+                foreach (var id in person.Identifiers)
+                    identifiers.Add(id);
+            }
+
+            return p;
+        }
+
+        private async Task NoSearchButIncremementWave(string searchRequestKey, WaveSearchData wave)
+        {
+            string cacheKey = searchRequestKey.DeepSearchKey(wave.DataPartner);
+            var waveMetaData = await _cacheService.Get(cacheKey);
+            if (waveMetaData != null)
+            {
+                _logger.Log(LogLevel.Information, $"{searchRequestKey} has an active wave but no new parameter");
+                WaveSearchData metaData = JsonConvert.DeserializeObject<WaveSearchData>(waveMetaData);
+                _logger.Log(LogLevel.Information, $"{searchRequestKey} Current Metadata Wave : {metaData.CurrentWave}");
+                metaData.CurrentWave++;
+                metaData.NewParameter = null;
+                await _cacheService.Save(cacheKey, metaData);
+                _logger.Log(LogLevel.Information, $"{searchRequestKey} New wave {metaData.CurrentWave} saved");
+            }
         }
 
         private static bool NoNewParameter(IEnumerable<WaveSearchData> waveData)

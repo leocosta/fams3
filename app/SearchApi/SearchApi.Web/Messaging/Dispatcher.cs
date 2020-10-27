@@ -66,18 +66,25 @@ namespace SearchApi.Web.Messaging
                 if (requestDataProvider.SearchSpeedType == SearchSpeedType.Fast && !personSearchRequest.IsPreScreenSearch)
                     await SaveForDeepSearch(personSearchRequest, requestDataProvider);
 
-                var endpoint = await getEndpointAddress(requestDataProvider.Name);
-
-                await endpoint.Send<PersonSearchOrdered>(new PeopleController.PersonSearchOrderEvent(searchRequestId, personSearchRequest.SearchRequestKey)
+                if (requestDataProvider.InCludeInWave)
                 {
-                    Person = personSearchRequest,
-                    TimeBetweenRetries = requestDataProvider.TimeBetweenRetries,
-                    NumberOfRetries = requestDataProvider.NumberOfRetries
-                });
+                    var endpoint = await getEndpointAddress(requestDataProvider.Name);
+
+                    await endpoint.Send<PersonSearchOrdered>(new PeopleController.PersonSearchOrderEvent(searchRequestId, personSearchRequest.SearchRequestKey)
+                    {
+                        Person = personSearchRequest,
+                        TimeBetweenRetries = requestDataProvider.TimeBetweenRetries,
+                        NumberOfRetries = requestDataProvider.NumberOfRetries
+                    });
+                }
 
                 
             }
+
+          
         }
+
+     
 
         private Task<ISendEndpoint> getEndpointAddress(string providerName)
         {

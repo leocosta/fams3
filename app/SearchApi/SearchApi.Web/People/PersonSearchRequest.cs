@@ -68,6 +68,8 @@ namespace SearchApi.Web.Controllers
 
         public SearchSpeedType SearchSpeedType { get; set; }
 
+        public bool InCludeInWave { get; set; } = true;
+
     }
 
   
