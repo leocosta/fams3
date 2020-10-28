@@ -104,7 +104,8 @@
         "completed",
         "numberOfRetries",
         "timeBetweenRetries",
-        "searchSpeedType"
+        "searchSpeedType",
+        "inCludeInWave"
       ],
       "properties": {
         "name": {
@@ -123,6 +124,9 @@
         },
         "searchSpeedType": {
           "$ref": "#/definitions/SearchSpeedType"
+        },
+        "inCludeInWave": {
+          "type": "boolean"
         }
       }
     },

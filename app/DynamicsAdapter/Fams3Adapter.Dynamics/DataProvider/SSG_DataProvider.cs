@@ -36,6 +36,8 @@ namespace Fams3Adapter.Dynamics.DataProvider
        
         public int TimeBetweenRetries { get; set; }
         public int SearchSpeed { get; set; }
+
+        public bool InCludeInWave { get; set; }
     }
 
     public class SSG_DataProvider
@@ -57,6 +59,8 @@ namespace Fams3Adapter.Dynamics.DataProvider
 
         [JsonProperty("ssg_SearchSpeed")]
         public int  SearchSpeed { get; set; }
+
+        public bool InCludeInWave { get; set; }
 
 
     }

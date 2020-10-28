@@ -105,6 +105,7 @@ namespace Fams3Adapter.Dynamics.SearchApiRequest
                         prov.NumberOfRetries = provider.NumberOfRetries;
                         prov.TimeBetweenRetries = provider.TimeBetweenRetries;
                         prov.SearchSpeed = provider.SearchSpeed;
+                        prov.InCludeInWave = provider.InCludeInWave;
                     }
                     apiProviders.Add(prov);
                 }
