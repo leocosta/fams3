@@ -43,7 +43,8 @@ namespace DynamicsAdapter.Web.Mapping
                  .ForMember(dest => dest.TypeCode, opt => opt.MapFrom(src => src.SupplierTypeCode))
                  .ForMember(dest => dest.IssuedBy, opt => opt.MapFrom(src => src.IssuedBy))
                  .ForMember(dest => dest.ReferenceDates, opt => opt.MapFrom<PersonalIdentifier_ReferenceDateResolver>())
-                 .ForMember(dest => dest.Type, opt => opt.ConvertUsing(new IdentifierTypeConverter(), src => src.IdentifierType));
+                 .ForMember(dest => dest.Type, opt => opt.ConvertUsing(new IdentifierTypeConverter(), src => src.IdentifierType))
+                 .ForMember(dest => dest.Owner, opt => opt.MapFrom(src => OwnerType.PersonSought));
 
             CreateMap<PersonalInfo, DynamicsEntity>()
                .ForMember(dest => dest.Date1, opt => opt.MapFrom<Date1Resolver>())
@@ -69,8 +70,19 @@ namespace DynamicsAdapter.Web.Mapping
                  .ForMember(dest => dest.Identifiers, opt => opt.MapFrom(src => src.Identifiers))
                  .ForMember(dest => dest.Names, opt => opt.MapFrom<NamesResolver>())
                  .ForMember(dest => dest.Agency, opt => opt.MapFrom<AgencyResolver>())
+                 .ForMember(dest => dest.JcaPerson, opt => opt.MapFrom(src => src))
+                 .ForMember(dest => dest.IsPreScreenSearch, opt => opt.MapFrom(src => src.IsPrescreenSearch))
                  .ForMember(dest => dest.SearchRequestKey, opt => opt.MapFrom(src => src.SearchRequest == null ? "0" : $"{src.SearchRequest.FileId}_{src.SequenceNumber}"))
                  .ForMember(dest => dest.DataProviders, opt => opt.MapFrom(src => src.DataProviders));
+
+            CreateMap<SSG_SearchApiRequest, JCAPerson>()
+                 .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.JCAFirstName))
+                 .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.JCALastName))
+                 .ForMember(dest => dest.MiddleName, opt => opt.MapFrom(src => src.JCAMiddleName))
+                 .ForMember(dest => dest.MotherMaidName, opt => opt.MapFrom(src => src.JCAMotherBirthSurname))
+                 .ForMember(dest => dest.Notes, opt => opt.MapFrom(src => src.JCANotes))
+                 .ForMember(dest => dest.BirthDate, opt => opt.MapFrom(src => src.JCAPersonBirthDate))
+                 .ForMember(dest => dest.Gender, opt => opt.ConvertUsing(new PersonGenderTypeConverter(), src => src.JCAGender));
 
             CreateMap<PersonSearchAccepted, SSG_SearchApiEvent>()
               .ForMember(dest => dest.EventType, opt => opt.MapFrom(src => Keys.EVENT_ACCEPTED))
@@ -107,7 +119,7 @@ namespace DynamicsAdapter.Web.Mapping
                .ForMember(dest => dest.OriginalRequestorReference, opt => opt.MapFrom(src => src.Person.Agency.RequestId))
                .ForMember(dest => dest.RequestDate, opt => opt.MapFrom(src => src.Person.Agency.RequestDate.DateTime))
                .ForMember(dest => dest.SearchReasonCode, opt => opt.MapFrom(src => src.Person.Agency.ReasonCode.ToString()))
-               .ForMember(dest => dest.AgencyOfficeLocationText, opt => opt.MapFrom(src => src.Person.Agency.LocationAddress))
+               .ForMember(dest => dest.AgencyOfficeLocationText, opt => opt.MapFrom(src => src.Person.Agency.LocationCode))
                .ForMember(dest => dest.AgencyCode, opt => opt.MapFrom(src => src.Person.Agency.Code))
                .ForMember(dest => dest.Notes, opt => opt.MapFrom(src => src.Person.Agency.Notes))
                .ForMember(dest => dest.PersonSoughtDateOfBirth, opt => opt.MapFrom(src => src.Person.DateOfBirth == null ? (DateTime?)null : ((DateTimeOffset)(src.Person.DateOfBirth)).DateTime))
@@ -134,7 +146,8 @@ namespace DynamicsAdapter.Web.Mapping
                  .ForMember(dest => dest.IncarcerationStatus, opt => opt.MapFrom(src => src.IncarcerationStatus))
                  .IncludeBase<PersonalInfo, DynamicsEntity>()
                  .ReverseMap()
-                    .ForMember(dest => dest.Owner, opt => opt.Ignore())
+                    .ForMember(dest => dest.AddressLine1, opt => opt.MapFrom(src => src.CouldNotLocate ? "Could Not Locate" : src.AddressLine1))
+                    .ForMember(dest => dest.Owner, opt => opt.MapFrom(src => OwnerType.PersonSought))
                     .ForMember(dest => dest.Type, opt => opt.ConvertUsing(new AddressTypeResponseConverter(), src => src.Category));
 
             CreateMap<Employment, EmploymentEntity>()
@@ -143,7 +156,7 @@ namespace DynamicsAdapter.Web.Mapping
               .ForMember(dest => dest.AddressLine3, opt => opt.MapFrom(src => (src.Employer == null) ? string.Empty : (src.Employer.Address == null) ? string.Empty : src.Employer.Address.AddressLine3))
               .ForMember(dest => dest.BusinessName, opt => opt.MapFrom(src => (src.Employer == null) ? string.Empty : src.Employer.Name))
               .ForMember(dest => dest.Occupation, opt => opt.MapFrom(src => src.Occupation))
-              .ForMember(dest => dest.Notes, opt => opt.MapFrom(src => src.Notes))
+              .ForMember(dest => dest.Notes, opt => opt.MapFrom<EmploymentEntityNotesResolver>())
               .ForMember(dest => dest.Website, opt => opt.MapFrom(src => src.Website))
               .ForMember(dest => dest.PostalCode, opt => opt.MapFrom(src => (src.Employer == null) ? string.Empty : (src.Employer.Address == null) ? string.Empty : src.Employer.Address.ZipPostalCode))
               .ForMember(dest => dest.City, opt => opt.MapFrom(src => (src.Employer == null) ? string.Empty : (src.Employer.Address == null) ? string.Empty : src.Employer.Address.City))
@@ -154,6 +167,10 @@ namespace DynamicsAdapter.Web.Mapping
               .ForMember(dest => dest.CountryText, opt => opt.MapFrom(src => (src.Employer == null) ? string.Empty : (src.Employer.Address == null) ? string.Empty : src.Employer.Address.CountryRegion))
               .ForMember(dest => dest.BusinessOwner, opt => opt.MapFrom(src => (src.Employer == null) ? string.Empty : src.Employer.OwnerName))
               .ForMember(dest => dest.EmploymentConfirmed, opt => opt.MapFrom(src => src.EmploymentConfirmed))
+              .ForMember(dest => dest.PrimaryPhoneNumber, opt => opt.ConvertUsing(new PrimaryPhoneNumberConvertor(), src => src.Employer == null ? null : src.Employer.Phones))
+              .ForMember(dest => dest.PrimaryPhoneExtension, opt => opt.ConvertUsing(new PrimaryPhoneExtConvertor(), src => src.Employer == null ? null : src.Employer.Phones))
+              .ForMember(dest => dest.PrimaryContactPhone, opt => opt.ConvertUsing(new PrimaryContactPhoneNumberConvertor(), src => src.Employer == null ? null : src.Employer.Phones))
+              .ForMember(dest => dest.PrimaryContactPhoneExt, opt => opt.ConvertUsing(new PrimaryContactPhoneExtConvertor(), src => src.Employer == null ? null : src.Employer.Phones))
               .ForMember(dest => dest.ContactPerson, opt => opt.MapFrom(src => (src.Employer == null) ? string.Empty : src.Employer.ContactPerson))
               .IncludeBase<PersonalInfo, DynamicsEntity>();
 
@@ -185,7 +202,8 @@ namespace DynamicsAdapter.Web.Mapping
                  .ForMember(dest => dest.TelephoneNumberType, opt => opt.ConvertUsing(new PhoneTypeConverter(), src => src.Type))
                .IncludeBase<PersonalInfo, DynamicsEntity>()
                .ReverseMap()
-                    .ForMember(dest => dest.Owner, opt => opt.Ignore())
+                    .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
+                    .ForMember(dest => dest.Owner, opt => opt.MapFrom(src => OwnerType.PersonSought))
                     .ForMember(dest => dest.Type, opt => opt.ConvertUsing(new PhoneTypeResponseConverter(), src => src.TelephoneNumberType));
 
             CreateMap<Name, AliasEntity>()
@@ -195,8 +213,7 @@ namespace DynamicsAdapter.Web.Mapping
                  .ForMember(dest => dest.ThirdGivenName, opt => opt.MapFrom(src => src.OtherName))
                  .ForMember(dest => dest.Type, opt => opt.ConvertUsing(new NameCategoryConverter(), src => src.Type))
                  .ForMember(dest => dest.SupplierTypeCode, opt => opt.MapFrom(src => src.Type))
-                 .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Description))
-                 .ForMember(dest => dest.Notes, opt => opt.MapFrom(src => src.Notes))
+                 .ForMember(dest => dest.Notes, opt => opt.MapFrom(src => $"{src.Notes} {src.Description}"))
                  .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => src.DateOfBirth))
                  .IncludeBase<PersonalInfo, DynamicsEntity>()
                  .ReverseMap()
@@ -282,7 +299,7 @@ namespace DynamicsAdapter.Web.Mapping
 
             CreateMap<SSG_Employment, Employer>()
                   .ForMember(dest => dest.DbaName, opt => opt.MapFrom(src => src.DBAName))
-                  .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.BusinessName))
+                  .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.CouldNotLocate ? "Could Not Locate" : src.BusinessName))
                   .ForMember(dest => dest.Phones, opt => opt.MapFrom<EmployerPhoneResponseResolver>())
                   .ForMember(dest => dest.ContactPerson, opt => opt.MapFrom(src => src.ContactPerson))
                   .ForMember(dest => dest.Address, opt => opt.MapFrom<EmployerAddressResponseResolver>());
@@ -352,6 +369,11 @@ namespace DynamicsAdapter.Web.Mapping
                   .ReverseMap()
                     .ForMember(dest => dest.ClaimAmount, opt => opt.MapFrom(src => src.ClaimAmount));
 
+            CreateMap<Person, SafetyConcernEntity>()
+                    .ForMember(dest => dest.Detail, opt => opt.MapFrom(src => $"{src.CautionFlag} {src.CautionReason} {src.CautionNotes}"))
+                    .ForMember(dest => dest.Type, opt => opt.ConvertUsing(new SafetyConcernTypeConverter(), src => src.CautionReason))
+                    .IncludeBase<PersonalInfo, DynamicsEntity>();
+
             CreateMap<InsuranceClaim, ICBCClaimEntity>()
                   .ForMember(dest => dest.ClaimType, opt => opt.MapFrom(src => src.ClaimType))
                   .ForMember(dest => dest.ClaimNumber, opt => opt.MapFrom(src => src.ClaimNumber))
@@ -413,7 +435,7 @@ namespace DynamicsAdapter.Web.Mapping
                    .ForMember(dest => dest.RequestDate, opt => opt.MapFrom(src => src.RequestDate))
                    .ForMember(dest => dest.ReasonCode, opt => opt.ConvertUsing(new SearchReasonCodeConverter(), src => src.SearchReason))
                    .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.Agency.AgencyCode))
-                   .ForMember(dest => dest.DaysOpen, opt => opt.MapFrom(src => src.DaysOpen))
+                   .ForMember(dest => dest.DaysOpen, opt => opt.ConvertUsing(new MinsToDaysConverter(), src => src.MinsOpen))
                    .ForMember(dest => dest.RequestId, opt => opt.MapFrom(src => src.OriginalRequestorReference))
                    .ForMember(dest => dest.RequestPriority, opt => opt.ConvertUsing(new RequestPriorityTypeConverter(), src => src.RequestPriority));
 
@@ -427,7 +449,7 @@ namespace DynamicsAdapter.Web.Mapping
 
             CreateMap<SSG_SafetyConcernDetail, SafetyConcern>()
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Detail))
-                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type))
+                .ForMember(dest => dest.Type, opt => opt.ConvertUsing(new SafetyConcernTypeResponseConverter(), src => src.Type))
                 .IncludeBase<DynamicsEntity, PersonalInfo>();
 
             CreateMap<SSG_Asset_PensionDisablility, Pension>()

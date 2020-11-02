@@ -162,7 +162,7 @@ namespace DynamicsAdapter.Web.Test.Mapping
                         OriginalRequestorReference="originalRef",
                         RequestPriority = RequestPriorityType.Rush.Value,
                         PersonSoughtRole = PersonSoughtType.P.Value,
-                        DaysOpen = 100
+                        MinsOpen = 100
                     }
                 }.ToArray(),
                 SSG_Persons = new List<SSG_Person>
@@ -181,7 +181,7 @@ namespace DynamicsAdapter.Web.Test.Mapping
             Assert.AreEqual(new DateTimeOffset(new DateTime(2001, 1, 1)), person.DateOfBirth);
             Assert.AreEqual(SoughtPersonType.PAYOR, person.Type);
             Assert.AreEqual("FMEP", person.Agency.Code);
-            Assert.AreEqual(100, person.Agency.DaysOpen);
+            Assert.AreEqual(1, person.Agency.DaysOpen);
             Assert.AreEqual(1, person.ResponsePersons.Count);
         }
 
@@ -254,6 +254,20 @@ namespace DynamicsAdapter.Web.Test.Mapping
         }
 
         [Test]
+        public void SSG_Address_couldnotlocate_map_to_Person_Address_correctly()
+        {
+            var address = new SSG_Address
+            {
+                CouldNotLocate = true,
+                Category = LocationType.Business.Value,
+                IncarcerationStatus = "incarceration"
+            };
+
+            Address addr = _mapper.Map<Address>(address);
+            Assert.AreEqual("Could Not Locate", addr.AddressLine1);
+        }
+
+        [Test]
         public void SSG_PhoneNumber_should_map_to_Person_Phone_correctly()
         {
             SSG_PhoneNumber phoneNumber = new SSG_PhoneNumber
@@ -261,7 +275,8 @@ namespace DynamicsAdapter.Web.Test.Mapping
                 TelePhoneNumber = "123456",
                 PhoneExtension = "123",
                 TelephoneNumberType = TelephoneNumberType.Home.Value,
-                ResponseComments = "responseComments"
+                ResponseComments = "responseComments",
+                PhoneNumber="123456"
             };
 
             Phone phone = _mapper.Map<Phone>(phoneNumber);
@@ -324,6 +339,20 @@ namespace DynamicsAdapter.Web.Test.Mapping
             Assert.AreEqual("Not Employed", e.EmploymentStatus);
             Assert.AreEqual("Extraprovincial Non-Share Corporation", e.SelfEmployComType);
             Assert.AreEqual(5, e.Employer.Phones.Count);
+        }
+
+        [Test]
+        public void SSG_Employment_couldnotlocate_should_map_to_Employment_correctly()
+        {
+            SSG_Employment employment = new SSG_Employment
+            {
+                CouldNotLocate = true
+            };
+
+            Employment e = _mapper.Map<Employment>(employment);
+
+            Assert.AreEqual("Could Not Locate", e.Employer.Name);
+
         }
 
         [Test]
@@ -426,7 +455,7 @@ namespace DynamicsAdapter.Web.Test.Mapping
             RelatedPerson person = _mapper.Map<RelatedPerson>(relatedPerson);
 
             Assert.AreEqual("firstName", person.FirstName);
-            Assert.AreEqual("Female", person.Gender);
+            Assert.AreEqual("f", person.Gender);
             Assert.AreEqual("Relation", person.PersonType);
             Assert.AreEqual("Friend", person.Type);
             Assert.AreEqual(new DateTimeOffset(new DateTime(2015, 1, 1)), person.DateOfBirth);
@@ -485,13 +514,13 @@ namespace DynamicsAdapter.Web.Test.Mapping
             SSG_SafetyConcernDetail safe = new SSG_SafetyConcernDetail
             {
                 Detail = "detail",
-                Type = "type"
+                Type = SafetyConcernType.Suicidal.Value
             };
 
             SafetyConcern concern = _mapper.Map<SafetyConcern>(safe);
 
             Assert.AreEqual("detail", concern.Description);
-            Assert.AreEqual("type", concern.Type);
+            Assert.AreEqual("Suicidal", concern.Type);
         }
 
         [Test]
@@ -550,7 +579,7 @@ namespace DynamicsAdapter.Web.Test.Mapping
 
             ResponsePerson rp = _mapper.Map<ResponsePerson>(person);
             Assert.AreEqual(new DateTimeOffset(new DateTime(2015, 1, 1)), rp.DateOfDeath);
-            Assert.AreEqual("Other", rp.Gender);
+            Assert.AreEqual("u", rp.Gender);
             Assert.AreEqual("firstName", rp.FirstName);
         }
     }

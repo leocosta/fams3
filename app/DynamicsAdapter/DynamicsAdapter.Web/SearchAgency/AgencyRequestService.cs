@@ -19,6 +19,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Fams3Adapter.Dynamics.Agency;
+using DynamicsAdapter.Web.SearchAgency.Exceptions;
+using Fams3Adapter.Dynamics.SafetyConcern;
 
 namespace DynamicsAdapter.Web.SearchAgency
 {
@@ -78,6 +80,7 @@ namespace DynamicsAdapter.Web.SearchAgency
             await UploadRelatedPersons();
             await UploadRelatedApplicant(_uploadedSearchRequest.ApplicantFirstName, _uploadedSearchRequest.ApplicantLastName);
             await UploadAliases();
+            await UploadSafetyConcern();
             await SubmitToQueue();
             return _uploadedSearchRequest;
         }
@@ -86,18 +89,8 @@ namespace DynamicsAdapter.Web.SearchAgency
         {
             var cts = new CancellationTokenSource();
             _cancellationToken = cts.Token;
-            SSG_SearchRequest ssgSearchRequest = await _searchRequestService.GetSearchRequest(searchRequestOrdered.SearchRequestKey, _cancellationToken);
-
-            if (ssgSearchRequest == null)
-            {
-                _logger.LogInformation("the cancelling search request does not exist.");
-                return null;
-            }
-            if (ssgSearchRequest.Agency == null || ssgSearchRequest.Agency.AgencyCode != searchRequestOrdered?.Person?.Agency?.Code)
-            {
-                throw new Exception("the cancelling search request cannot be processed as wrong agency code.");
-            }
-
+            SSG_SearchRequest existedSearchRequest = await VerifySearchRequest(searchRequestOrdered);
+            if (existedSearchRequest == null) return null;
             return await _searchRequestService.CancelSearchRequest(searchRequestOrdered.SearchRequestKey, searchRequestOrdered?.Person?.Agency?.Notes, _cancellationToken);
         }
 
@@ -105,17 +98,8 @@ namespace DynamicsAdapter.Web.SearchAgency
         {
             var cts = new CancellationTokenSource();
             _cancellationToken = cts.Token;
-            //get existedSearchRequest
-            SSG_SearchRequest existedSearchRequest = await _searchRequestService.GetSearchRequest(searchRequestOrdered.SearchRequestKey, _cancellationToken);
-            if (existedSearchRequest == null)
-            {
-                _logger.LogInformation("the updating search request does not exist.");
-                return null;
-            }
-            if (existedSearchRequest.StatusCode == SEARCH_REQUEST_CANCELLED || existedSearchRequest.StatusCode == SEARCH_REQUEST_CLOSED)
-            {
-                throw new Exception($"Search Request {searchRequestOrdered.SearchRequestKey} is already closed or cancelled.");
-            }
+            SSG_SearchRequest existedSearchRequest = await VerifySearchRequest(searchRequestOrdered);
+            if (existedSearchRequest == null) return null;
             existedSearchRequest.IsDuplicated = true;
             _uploadedSearchRequest = existedSearchRequest;
 
@@ -141,12 +125,6 @@ namespace DynamicsAdapter.Web.SearchAgency
                 _logger.LogError("cannot do updating as newSearchRequest is null");
                 return null;
             }
-            //cannot update search request with different AgencyCode
-            if (newSearchRequest?.AgencyCode != _uploadedSearchRequest?.Agency?.AgencyCode)
-            {
-                _logger.LogError("cannot updating to a different Agency code. Not a vaild update request.");
-                return null;
-            }
 
             //update searchRequestEntity
             await UpdateSearchRequest(newSearchRequest);
@@ -167,6 +145,7 @@ namespace DynamicsAdapter.Web.SearchAgency
             _personSought = searchRequestOrdered.Person;
 
             await UpdatePersonSought();
+            await UpdateSafetyConcern();
 
             //update RelatedPerson applicant
             await UpdateRelatedApplicant((string.IsNullOrEmpty(newSearchRequest.ApplicantFirstName) && string.IsNullOrEmpty(newSearchRequest.ApplicantLastName)) ? null : new RelatedPersonEntity()
@@ -194,6 +173,30 @@ namespace DynamicsAdapter.Web.SearchAgency
             return _uploadedSearchRequest;
         }
 
+        private async Task<SSG_SearchRequest> VerifySearchRequest(SearchRequestOrdered searchRequestOrdered)
+        {
+            //get existedSearchRequest
+            SSG_SearchRequest existedSearchRequest = await _searchRequestService.GetSearchRequest(searchRequestOrdered.SearchRequestKey, _cancellationToken);
+            if (existedSearchRequest == null)
+            {
+                _logger.LogInformation("the updating search request does not exist.");
+                return null;
+            }
+            if (existedSearchRequest.StatusCode == SEARCH_REQUEST_CANCELLED)
+            {
+                throw new AgencyRequestException("fileCancelled", new Exception($"File {searchRequestOrdered.SearchRequestKey} is cancelled."));
+            }
+            if (existedSearchRequest.StatusCode == SEARCH_REQUEST_CLOSED)
+            {
+                throw new AgencyRequestException("fileClosed", new Exception($"File {searchRequestOrdered.SearchRequestKey} is closed."));
+            }
+            if (existedSearchRequest.Agency == null || existedSearchRequest.Agency.AgencyCode != searchRequestOrdered?.Person?.Agency?.Code)
+            {
+                throw new AgencyRequestException("wrongAgency", new Exception($"Wrong Agency Code."));
+            }
+            return existedSearchRequest;
+        }
+
         private async Task<bool> UploadIdentifiers(bool inUpdateProcess = false)
         {
             if (_personSought.Identifiers == null) return true;
@@ -209,6 +212,26 @@ namespace DynamicsAdapter.Web.SearchAgency
                 if (inUpdateProcess)
                     identifier.UpdateDetails = "New Identifier";
                 SSG_Identifier newIdentifier = await _searchRequestService.CreateIdentifier(identifier, _cancellationToken);
+            }
+
+            //following is for alias person has identifiers, this situation never happened before. But the data structure is there.
+            if (_personSought.Names == null) return true;
+            foreach (Name personName in _personSought.Names.Where(m => m.Owner == OwnerType.PersonSought))
+            {
+                if (personName.Identifiers != null)
+                {
+                    foreach (var personId in personName.Identifiers)
+                    {
+                        IdentifierEntity identifier = _mapper.Map<IdentifierEntity>(personId);
+                        identifier.SearchRequest = _uploadedSearchRequest;
+                        identifier.InformationSource = InformationSourceType.Request.Value;
+                        identifier.Person = _uploadedPerson;
+                        identifier.IsCreatedByAgency = true;
+                        if (inUpdateProcess)
+                            identifier.UpdateDetails = "New Identifier";
+                        SSG_Identifier newIdentifier = await _searchRequestService.CreateIdentifier(identifier, _cancellationToken);
+                    }
+                }
             }
             _logger.LogInformation("Create identifier records for SearchRequest successfully");
             return true;
@@ -229,6 +252,24 @@ namespace DynamicsAdapter.Web.SearchAgency
                 addr.IsCreatedByAgency = true;
                 if (inUpdateProcess) addr.UpdateDetails = "New Address";
                 SSG_Address uploadedAddr = await _searchRequestService.CreateAddress(addr, _cancellationToken);
+            }
+
+            //following is for alias person has addresses, this situation never happened before. But the data structure is there.
+            if (_personSought.Names == null) return true;
+            foreach (Name personName in _personSought.Names?.Where(m => m.Owner == OwnerType.PersonSought))
+            {
+                if (personName.Addresses != null)
+                {
+                    foreach (var address in personName.Addresses)
+                    {
+                        AddressEntity addr = _mapper.Map<AddressEntity>(address);
+                        addr.SearchRequest = _uploadedSearchRequest;
+                        addr.InformationSource = InformationSourceType.Request.Value;
+                        addr.Person = _uploadedPerson;
+                        addr.IsCreatedByAgency = true;
+                        SSG_Address uploadedAddr = await _searchRequestService.CreateAddress(addr, _cancellationToken);
+                    }
+                }
             }
             _logger.LogInformation("Create addresses records for SearchRequest successfully");
             return true;
@@ -253,11 +294,46 @@ namespace DynamicsAdapter.Web.SearchAgency
                 }
                 SSG_PhoneNumber uploadedPhone = await _searchRequestService.CreatePhoneNumber(ph, _cancellationToken);
             }
+
+            //following is for alias person has phones, this situation never happened before. But the data structure is there.
+            if (_personSought.Names == null) return true;
+            foreach (Name personName in _personSought.Names?.Where(m => m.Owner == OwnerType.PersonSought))
+            {
+                if (personName.Phones != null)
+                {
+                    foreach (var phone in personName.Phones)
+                    {
+                        PhoneNumberEntity phoneNumber = _mapper.Map<PhoneNumberEntity>(phone);
+                        phoneNumber.SearchRequest = _uploadedSearchRequest;
+                        phoneNumber.InformationSource = InformationSourceType.Request.Value;
+                        phoneNumber.Person = _uploadedPerson;
+                        phoneNumber.IsCreatedByAgency = true;
+                        SSG_PhoneNumber uploadedPhone = await _searchRequestService.CreatePhoneNumber(phoneNumber, _cancellationToken);
+                    }
+                }
+            }
             _logger.LogInformation("Create phones records for SearchRequest successfully");
             return true;
         }
 
-        private async Task<bool> UploadEmployment(bool inUpdateProcess=false)
+         private async Task<bool> UploadSafetyConcern(bool inUpdateProcess = false)
+        {
+            if( string.IsNullOrEmpty(_personSought.CautionFlag) 
+                && string.IsNullOrEmpty(_personSought.CautionReason) 
+                && string.IsNullOrEmpty(_personSought.CautionNotes))
+                return true;
+            SafetyConcernEntity entity = _mapper.Map<SafetyConcernEntity>(_personSought);
+            entity.SearchRequest = _uploadedSearchRequest;
+            entity.InformationSource = InformationSourceType.Request.Value;
+            entity.Person = _uploadedPerson;
+            entity.IsCreatedByAgency = true;
+            if (inUpdateProcess) entity.UpdateDetails = "New Safety Concern";
+            await _searchRequestService.CreateSafetyConcern(entity, _cancellationToken);
+            _logger.LogInformation("Create Safety Concern records for SearchRequest successfully");
+            return true;
+        }
+
+        private async Task<bool> UploadEmployment(bool inUpdateProcess = false)
         {
             if (_personSought.Employments == null) return true;
 
@@ -399,6 +475,27 @@ namespace DynamicsAdapter.Web.SearchAgency
                 await _searchRequestService.UpdatePerson(_uploadedPerson.PersonId, updatedFields, newPersonEntity, _cancellationToken);
                 _logger.LogInformation("Update Person successfully");
             }
+            return true;
+        }
+
+        private async Task<bool> UpdateSafetyConcern()
+        {
+            SSG_SafetyConcernDetail originalSafeEntity = _uploadedPerson.sSG_SafetyConcernDetails?.FirstOrDefault(m => m.IsCreatedByAgency);
+            if(originalSafeEntity == null)
+            {
+                await UploadSafetyConcern(true);
+            }
+            else
+            {
+                SafetyConcernEntity newSafeEntity = _mapper.Map<SafetyConcernEntity>(_personSought);
+                Dictionary<string, object> updatedFields = (Dictionary<string, object>)originalSafeEntity.Clone().GetUpdateEntries(newSafeEntity);
+                if (updatedFields.Count > 0)
+                {
+                    await _searchRequestService.UpdateSafetyConcern(originalSafeEntity.SafetyConcernDetailId, updatedFields, _cancellationToken);
+                    _logger.LogInformation("Update Person successfully");
+                }
+            }
+
             return true;
         }
 

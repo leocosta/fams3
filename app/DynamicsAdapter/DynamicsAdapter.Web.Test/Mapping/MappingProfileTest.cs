@@ -14,6 +14,7 @@ using Fams3Adapter.Dynamics.OtherAsset;
 using Fams3Adapter.Dynamics.Person;
 using Fams3Adapter.Dynamics.PhoneNumber;
 using Fams3Adapter.Dynamics.RelatedPerson;
+using Fams3Adapter.Dynamics.SafetyConcern;
 using Fams3Adapter.Dynamics.SearchApiEvent;
 using Fams3Adapter.Dynamics.SearchApiRequest;
 using Fams3Adapter.Dynamics.SearchRequest;
@@ -84,21 +85,30 @@ namespace DynamicsAdapter.Web.Test.Mapping
                     new SSG_SearchapiRequestDataProvider(){AdaptorName="ICBC"},
                     new SSG_SearchapiRequestDataProvider(){AdaptorName="BC Hydro"}
                 },
-                SearchRequest = new SSG_SearchRequest() { 
-                    FileId = "testFileId", 
-                    ApplicantFirstName="applicantFirstName",
-                    ApplicantLastName="applicantLastName",
-                    SearchReason = new SSG_SearchRequestReason { ReasonCode= "EnfPayAgr" }
+                SearchRequest = new SSG_SearchRequest()
+                {
+                    FileId = "testFileId",
+                    ApplicantFirstName = "applicantFirstName",
+                    ApplicantLastName = "applicantLastName",
+                    SearchReason = new SSG_SearchRequestReason { ReasonCode = "EnfPayAgr" }
                 },
-                SequenceNumber = "123456"
+                SequenceNumber = "123456",
+                IsPrescreenSearch = true,
+                JCAPersonBirthDate = new DateTime(1999, 1, 1),
+                JCAMotherBirthSurname = "MotherMaidName",
+                JCAGender = GenderType.Female.Value
             };
             PersonSearchRequest personSearchRequest = _mapper.Map<PersonSearchRequest>(sSG_SearchApiRequest);
             Assert.AreEqual("firstName", personSearchRequest.FirstName);
             Assert.AreEqual("lastName", personSearchRequest.LastName);
+            Assert.AreEqual(new DateTimeOffset(new DateTime(1999,1,1)), personSearchRequest.JcaPerson.BirthDate);
+            Assert.AreEqual("f", personSearchRequest.JcaPerson.Gender);
+            Assert.AreEqual("MotherMaidName", personSearchRequest.JcaPerson.MotherMaidName);
             Assert.AreEqual(new DateTimeOffset(new DateTime(2002, 2, 2)), personSearchRequest.DateOfBirth);
             Assert.AreEqual(2, personSearchRequest.Identifiers.Count);
             Assert.AreEqual(2, personSearchRequest.DataProviders.Count);
             Assert.AreEqual(1, personSearchRequest.Names.Count);
+            Assert.AreEqual(true, personSearchRequest.IsPreScreenSearch);
             Assert.AreEqual(OwnerType.Applicant, personSearchRequest.Names.ElementAt(0).Owner);
             Assert.AreEqual("testFileId_123456", personSearchRequest.SearchRequestKey);
             Assert.AreEqual(SearchReasonCode.EnfPayAgr, personSearchRequest.Agency.ReasonCode);
@@ -313,6 +323,20 @@ namespace DynamicsAdapter.Web.Test.Mapping
             Assert.AreEqual(new DateTime(2020, 9, 1), addr.Date2);
             Assert.AreEqual("description", addr.Description);
             Assert.AreEqual("notes", addr.Notes);
+        }
+
+        [Test]
+        public void Person_should_map_to_SSG_SafetyConcern_correctly()
+        {
+            var p = new Person()
+            {
+                CautionFlag="flag",
+                CautionNotes="notes",
+                CautionReason="violent",
+            };
+            SafetyConcernEntity safe = _mapper.Map<SafetyConcernEntity>(p);
+            Assert.AreEqual(SafetyConcernType.Violence.Value, safe.Type);
+            Assert.AreEqual("flag violent notes", safe.Detail);
         }
 
         [Test]
@@ -805,8 +829,7 @@ namespace DynamicsAdapter.Web.Test.Mapping
             Assert.AreEqual("MiddleName", ssg_name.MiddleName);
             Assert.AreEqual("OtherName", ssg_name.ThirdGivenName);
             Assert.AreEqual(PersonNameCategory.Other.Value, ssg_name.Type);
-            Assert.AreEqual("test name", ssg_name.Comments);
-            Assert.AreEqual("notes", ssg_name.Notes);
+            Assert.AreEqual("notes test name", ssg_name.Notes);
             Assert.AreEqual("Former", ssg_name.SupplierTypeCode);
             Assert.AreEqual(1, ssg_name.StatusCode);
             Assert.AreEqual(0, ssg_name.StateCode);

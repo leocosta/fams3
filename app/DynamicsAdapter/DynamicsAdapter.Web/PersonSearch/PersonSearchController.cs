@@ -11,6 +11,7 @@ using Fams3Adapter.Dynamics.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using NSwag.Annotations;
 using Serilog.Context;
 using System;
@@ -110,7 +111,7 @@ namespace DynamicsAdapter.Web.PersonSearch
            
             if (dataSearchApiDataProvider != null)
             {
-                _logger.LogInformation($"Updating the no of tries for search api request {request.SearchApiRequestId}");
+                //_logger.LogInformation($"Updating the no of tries for search api request {request.SearchApiRequestId}");
                 dataSearchApiDataProvider.NumberOfFailures = (noOfTry == 1) ? dataSearchApiDataProvider.NumberOfFailures + noOfTry : noOfTry;
                 if (dataSearchApiDataProvider.NumberOfDaysToRetry == dataSearchApiDataProvider.NumberOfFailures)
                     dataSearchApiDataProvider.AllRetriesDone = NullableBooleanType.Yes.Value;
@@ -119,7 +120,7 @@ namespace DynamicsAdapter.Web.PersonSearch
 
 
                 await _dataPartnerService.UpdateSearchRequestApiProvider(dataSearchApiDataProvider, cts.Token);
-                _logger.LogInformation($"Updated the no of tries for search api request {request.SearchApiRequestId}");
+               // _logger.LogInformation($"Updated the no of tries for search api request {request.SearchApiRequestId}");
             }
         }
 
@@ -142,7 +143,10 @@ namespace DynamicsAdapter.Web.PersonSearch
                 try
                 {
                     SSG_SearchApiRequest request = await _register.GetSearchApiRequest(key);
+                    _logger.LogInformation(JsonConvert.SerializeObject(personAcceptedEvent));
+                    _logger.LogInformation(JsonConvert.SerializeObject(request));
                     var searchApiEvent = _mapper.Map<SSG_SearchApiEvent>(personAcceptedEvent);
+                    _logger.LogInformation(JsonConvert.SerializeObject(searchApiEvent));
                     _logger.LogDebug($"Attempting to create a new event for SearchApiRequest");
                     await _searchApiRequestService.AddEventAsync(request.SearchApiRequestId, searchApiEvent, token.Token);
                     _logger.LogInformation($"Successfully created accepted event for SearchApiRequest");
@@ -215,7 +219,7 @@ namespace DynamicsAdapter.Web.PersonSearch
                     SSG_SearchApiRequest request = await _register.GetSearchApiRequest(key);
                     await _searchApiRequestService.MarkComplete(request.SearchApiRequestId, token.Token);
                     _logger.LogInformation($"Successfully finalized Person Search.");
-                    await _register.RemoveSearchApiRequest(key);
+                   // await _register.RemoveSearchApiRequest(key);
                 }
                 catch (Exception ex)
                 {

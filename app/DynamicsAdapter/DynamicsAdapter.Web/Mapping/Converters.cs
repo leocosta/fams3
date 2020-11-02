@@ -77,7 +77,24 @@ namespace DynamicsAdapter.Web.Mapping
         }
     }
 
+    public class SafetyConcernTypeResponseConverter : IValueConverter<int?, string>
+    {
+        public string Convert(int? sourceMember, ResolutionContext context)
+        {
+            if (sourceMember == null) return null;
+            return SafetyConcernType.GetAll<SafetyConcernType>().SingleOrDefault(m => m.Value == sourceMember)?.Name;
+        }
+    }
 
+    public class SafetyConcernTypeConverter : IValueConverter<string, int?>
+    {
+        public int? Convert(string sourceMember, ResolutionContext context)
+        {
+            if (sourceMember == null) return null;
+            if (string.Equals(sourceMember, "Violent", StringComparison.InvariantCultureIgnoreCase)) return SafetyConcernType.Violence.Value;
+            else return SafetyConcernType.Other.Value;
+        }
+    }
 
     public class NameCategoryConverter : IValueConverter<string, int?>
     {
@@ -212,7 +229,7 @@ namespace DynamicsAdapter.Web.Mapping
         {
             if (sourceMember == null) return null;
             return
-                Enumeration.GetAll<GenderType>().SingleOrDefault(m => m.Value == sourceMember)?.Name;
+                GenderDictionary.GenderTypeDictionary.FirstOrDefault(m => m.Value == (int)sourceMember).Key;
 
         }
     }
@@ -304,17 +321,21 @@ namespace DynamicsAdapter.Web.Mapping
                 return $"Auto search processing completed successfully. 0 Matched Persons found.";
             var matchedPersons = sourceMember.MatchedPersons;
 
-  
+            
             if (!string.IsNullOrEmpty(sourceMember.Message))
                 strbuilder.Append($"Auto search processing completed successfully. {sourceMember.Message}. {matchedPersons.Count()} Matched Persons found.\n");
             else
                 strbuilder.Append($"Auto search processing completed successfully. {matchedPersons.Count()} Matched Persons found.\n");
-  
+
 
             int i = 1;
-            foreach (Person p in matchedPersons)
+            foreach (PersonFound p in matchedPersons)
             {
+           
+               
                 strbuilder.Append($"For Matched Person {i} : ");
+                if (p.SourcePersonalIdentifier != null)
+                    strbuilder.Append($" Source ID:- {p.SourcePersonalIdentifier.Type}/{p.SourcePersonalIdentifier.Value} - ");
                 strbuilder.Append($"{(p.Identifiers == null ? 0 : p.Identifiers.Count)} identifier(s) found.  ");
                 strbuilder.Append($"{(p.Addresses == null ? 0 : p.Addresses.Count)} addresses found. ");
                 strbuilder.Append($"{(p.Phones == null ? 0 : p.Phones.Count)} phone number(s) found. ");
@@ -332,8 +353,47 @@ namespace DynamicsAdapter.Web.Mapping
         }
     }
 
+    public class PrimaryPhoneNumberConvertor : IValueConverter<ICollection<Phone>, string>
+    {
+        public string Convert(ICollection<Phone> phones, ResolutionContext context)
+        {
+            return phones?.FirstOrDefault(m => string.Equals(m.Type, "Phone", StringComparison.InvariantCultureIgnoreCase))?.PhoneNumber;
+        }
+    }
 
- 
+    public class PrimaryPhoneExtConvertor : IValueConverter<ICollection<Phone>, string>
+    {
+        public string Convert(ICollection<Phone> phones, ResolutionContext context)
+        {
+            return phones?.FirstOrDefault(m => string.Equals(m.Type, "Phone", StringComparison.InvariantCultureIgnoreCase))?.Extension;
+        }
+    }
+
+    public class PrimaryContactPhoneNumberConvertor : IValueConverter<ICollection<Phone>, string>
+    {
+        public string Convert(ICollection<Phone> phones, ResolutionContext context)
+        {
+            if (phones == null) return null;
+            if (phones.Where(m => string.Equals(m.Type, "Phone", StringComparison.InvariantCultureIgnoreCase)).Count() > 1)
+            {
+                return phones.Where(m => string.Equals(m.Type, "Phone", StringComparison.InvariantCultureIgnoreCase)).ElementAt(1).PhoneNumber;
+            };
+            return null;
+        }
+    }
+
+    public class PrimaryContactPhoneExtConvertor : IValueConverter<ICollection<Phone>, string>
+    {
+        public string Convert(ICollection<Phone> phones, ResolutionContext context)
+        {
+            if (phones == null) return null;
+            if (phones.Where(m => string.Equals(m.Type, "Phone", StringComparison.InvariantCultureIgnoreCase)).Count() > 1)
+            {
+                return phones.Where(m => string.Equals(m.Type, "Phone", StringComparison.InvariantCultureIgnoreCase)).ElementAt(1).Extension;
+            };
+            return null;
+        }
+    }
 
     public class IncomeAssistanceConvertor : IValueConverter<bool?, int>
     {
@@ -423,6 +483,16 @@ namespace DynamicsAdapter.Web.Mapping
             if (sourceMember == PersonSoughtType.P.Value) return SoughtPersonType.PAYOR;
             if (sourceMember == PersonSoughtType.R.Value) return SoughtPersonType.RECIPIENT;
             return SoughtPersonType.PAYOR;
+        }
+    }
+
+    public class MinsToDaysConverter : IValueConverter<int, int?>
+    {
+        public int? Convert(int mins, ResolutionContext context)
+        {
+            if(mins<=0) return null;
+            TimeSpan timeSpan = new TimeSpan(0,mins,0);
+            return timeSpan.Days+1;
         }
     }
 }

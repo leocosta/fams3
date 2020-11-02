@@ -36,14 +36,39 @@ namespace Fams3Adapter.Dynamics.SearchApiRequest
         public int StatusCode { get; set; }
 
         [JsonProperty("ssg_name")]
-        public string SequenceNumber{ get; set; }
+        public string SequenceNumber { get; set; }
 
-       [JsonProperty("ssg_ssg_identifier_ssg_searchapirequest")]
+        [JsonProperty("ssg_isprescreeningautosearch")]
+        public bool IsPrescreenSearch { get; set; }
+
+        [JsonProperty("ssg_ssg_identifier_ssg_searchapirequest")]
         public SSG_Identifier[] Identifiers { get; set; }
 
         [JsonProperty("ssg_ssg_searchapirequest_ssg_sapirdataprovide")]
         public SSG_SearchapiRequestDataProvider[] DataProviders { get; set; }
 
         public bool IsFailed { get; set; }
+
+        [JsonProperty("ssg_jcafirstname")]
+        public string JCAFirstName { get; set; }
+
+        [JsonProperty("ssg_jcalastname")]
+        public string JCALastName { get; set; }
+
+        [JsonProperty("ssg_jcamiddlename")]
+        public string JCAMiddleName { get; set; }
+
+        [JsonProperty("ssg_jcamotherssurnameatbirth")]
+        public string JCAMotherBirthSurname { get; set; }
+
+        [JsonProperty("ssg_jcadateofbirth")]
+        public DateTime? JCAPersonBirthDate { get; set; }
+
+        [JsonProperty("ssg_jcanotes")]
+        public string JCANotes { get; set; }
+
+        [JsonProperty("ssg_jcagender")]
+        public int? JCAGender { get; set; }
+
     }
 }

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using DynamicsAdapter.Web.SearchAgency;
+using DynamicsAdapter.Web.SearchAgency.Exceptions;
 using DynamicsAdapter.Web.SearchAgency.Models;
 using Fams3Adapter.Dynamics.Address;
 using Fams3Adapter.Dynamics.Agency;
@@ -10,6 +11,7 @@ using Fams3Adapter.Dynamics.Notes;
 using Fams3Adapter.Dynamics.Person;
 using Fams3Adapter.Dynamics.PhoneNumber;
 using Fams3Adapter.Dynamics.RelatedPerson;
+using Fams3Adapter.Dynamics.SafetyConcern;
 using Fams3Adapter.Dynamics.SearchRequest;
 using Fams3Adapter.Dynamics.Types;
 using Microsoft.Extensions.Logging;
@@ -439,6 +441,7 @@ namespace DynamicsAdapter.Web.Test.SearchAgency
                     ApplicantLastName = "applicantLastName",
                     CreatedByApi = true,
                     SendNotificationOnCreation = true,
+                    Agency= new SSG_Agency { AgencyCode="FMEP" },
                     SSG_Persons = new List<SSG_Person>()
                     {
                         new SSG_Person()
@@ -528,6 +531,7 @@ namespace DynamicsAdapter.Web.Test.SearchAgency
                     PersonSoughtLastName = "lastName",
                     CreatedByApi = true,
                     AgencyCode = "FMEP",
+                    Agency= new SSG_Agency {AgencyCode="FMEP"},
                     SendNotificationOnCreation = true,
                     SSG_Persons = new List<SSG_Person>()
                     {
@@ -1078,6 +1082,99 @@ namespace DynamicsAdapter.Web.Test.SearchAgency
         }
 
         [Test]
+        public async Task Person_Caution_added_ProcessUpdateSearchRequest_should_run_CreateSafetyConcern_correctly()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid personGuid = Guid.NewGuid();
+
+            _searchRequestServiceMock.Setup(x => x.GetPerson(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult<SSG_Person>(new SSG_Person()
+                {
+                    PersonId = personGuid,
+                    LastName = "lastName",
+                    FirstName = "firstName",
+                    IsCreatedByAgency = true,
+                }));
+
+            SearchRequestEntity newSearchRequest = new SearchRequestEntity()
+            {
+            };
+            _mapper.Setup(m => m.Map<SearchRequestEntity>(It.IsAny<SearchRequestOrdered>()))
+                .Returns(newSearchRequest);
+
+            _mapper.Setup(m => m.Map<PersonEntity>(It.IsAny<Person>()))
+               .Returns(new PersonEntity() { FirstName = "firstName", LastName = "lastName"});
+
+            _mapper.Setup(m => m.Map<SafetyConcernEntity>(It.IsAny<Person>()))
+                .Returns(new SafetyConcernEntity {Detail= "flag" });
+
+            SearchRequestOrdered searchRequstOrdered = new SearchRequestOrdered()
+            {
+                Action = RequestAction.UPDATE,
+                RequestId = "1111111",
+                SearchRequestId = Guid.NewGuid(),
+                Person = new Person()
+                {
+                    Agency=new Agency { Code="FMEP"},
+                    CautionFlag="flag"                 
+                }
+            };
+            SSG_SearchRequest ssgSearchRequest = await _sut.ProcessUpdateSearchRequest(searchRequstOrdered);
+            _searchRequestServiceMock.Verify(m => m.CreateSafetyConcern(It.IsAny<SafetyConcernEntity>(),It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+
+        [Test]
+        public async Task Person_Caution_changed_ProcessUpdateSearchRequest_should_run_UpdateSafetyConcern_correctly()
+        {
+            Guid guid = Guid.NewGuid();
+            Guid personGuid = Guid.NewGuid();
+
+            _searchRequestServiceMock.Setup(x => x.GetPerson(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult<SSG_Person>(new SSG_Person()
+                {
+                    PersonId = personGuid,
+                    LastName = "lastName",
+                    FirstName = "firstName",
+                    IsCreatedByAgency = true,
+                    sSG_SafetyConcernDetails= new List<SSG_SafetyConcernDetail>() {
+                        new SSG_SafetyConcernDetail()
+                        {
+                            Detail = "originalDetail", IsCreatedByAgency=true
+                        }
+                    }.ToArray()
+                }));
+
+            SearchRequestEntity newSearchRequest = new SearchRequestEntity()
+            {
+            };
+            _mapper.Setup(m => m.Map<SearchRequestEntity>(It.IsAny<SearchRequestOrdered>()))
+                .Returns(newSearchRequest);
+
+            _mapper.Setup(m => m.Map<PersonEntity>(It.IsAny<Person>()))
+               .Returns(new PersonEntity() { FirstName = "firstName", LastName = "lastName" });
+
+            _mapper.Setup(m => m.Map<SafetyConcernEntity>(It.IsAny<Person>()))
+                .Returns(new SafetyConcernEntity { Detail = "flag" });
+
+            SearchRequestOrdered searchRequstOrdered = new SearchRequestOrdered()
+            {
+                Action = RequestAction.UPDATE,
+                RequestId = "1111111",
+                SearchRequestId = Guid.NewGuid(),
+                Person = new Person()
+                {
+                    Agency = new Agency { Code = "FMEP" },
+                    CautionFlag = "flag"
+                }
+            };
+            SSG_SearchRequest ssgSearchRequest = await _sut.ProcessUpdateSearchRequest(searchRequstOrdered);
+            _searchRequestServiceMock.Verify(m => m.UpdateSafetyConcern(It.IsAny<Guid>(),
+                 It.IsAny<IDictionary<string, object>>(),
+                 It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
         public void exception_searchRequestOrdered_ProcessUpdateSearchRequest_should_throw_exception()
         {
             Guid guid = Guid.NewGuid();
@@ -1098,7 +1195,7 @@ namespace DynamicsAdapter.Web.Test.SearchAgency
                     }));
 
             SearchRequestOrdered searchRequestOrdered = new SearchRequestOrdered();
-            Assert.ThrowsAsync<Exception>(async () => await _sut.ProcessUpdateSearchRequest(searchRequestOrdered));
+            Assert.ThrowsAsync<AgencyRequestException>(async () => await _sut.ProcessUpdateSearchRequest(searchRequestOrdered));
         }
 
         [Test]
@@ -1112,7 +1209,7 @@ namespace DynamicsAdapter.Web.Test.SearchAgency
                     }));
 
             SearchRequestOrdered searchRequestOrdered = new SearchRequestOrdered();
-            Assert.ThrowsAsync<Exception>(async () => await _sut.ProcessUpdateSearchRequest(searchRequestOrdered));
+            Assert.ThrowsAsync<AgencyRequestException>(async () => await _sut.ProcessUpdateSearchRequest(searchRequestOrdered));
         }
 
         [Test]
@@ -1128,7 +1225,7 @@ namespace DynamicsAdapter.Web.Test.SearchAgency
         }
 
         [Test]
-        public async Task wrong_agencyCode_searchRequestOrdered_ProcessUpdateSearchRequest_should_return_null()
+        public void wrong_agencyCode_searchRequestOrdered_ProcessUpdateSearchRequest_should_return_throwException()
         {
             _searchRequestServiceMock.Setup(x => x.GetPerson(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                     .Returns(Task.FromResult<SSG_Person>(new SSG_Person()
@@ -1138,9 +1235,7 @@ namespace DynamicsAdapter.Web.Test.SearchAgency
                     }));
             Guid guid = Guid.NewGuid();
             SearchRequestOrdered searchRequestOrdered = new SearchRequestOrdered { Person = new Person { Agency = new Agency { Code = "TEST" } } };
-            SSG_SearchRequest ssgSearchRequest = await _sut.ProcessUpdateSearchRequest(searchRequestOrdered);
-            _searchRequestServiceMock.Verify(m => m.CreateNotes(It.IsAny<NotesEntity>(), It.IsAny<CancellationToken>()), Times.Never);
-            Assert.AreEqual(null, ssgSearchRequest);
+            Assert.ThrowsAsync<AgencyRequestException>(async()=>await _sut.ProcessUpdateSearchRequest(searchRequestOrdered));
         }
 
         [Test]
