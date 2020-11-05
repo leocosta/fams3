@@ -5,7 +5,9 @@ using Fams3Adapter.Dynamics.Identifier;
 using Fams3Adapter.Dynamics.SearchApiRequest;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,6 +26,8 @@ namespace DynamicsAdapter.Web.Register
         Task<bool> RemoveSearchApiRequest(string searchRequestKey);
         Task<SSG_Identifier> GetMatchedSourceIdentifier(PersonalIdentifier identifer, string searchRequestKey);
         Task<SSG_Identifier> GetMatchedSourceIdentifier(PersonalIdentifier identifer, Guid searchApiRequestId);
+
+        Task<bool> DataPartnerSearchIsComplete(string searchRequestKey);
     }
 
     public class SearchRequestRegister : ISearchRequestRegister
@@ -144,6 +148,14 @@ namespace DynamicsAdapter.Web.Register
         {
             await _cache.Delete($"{Keys.REDIS_KEY_PREFIX}{searchRequestKey}");
             return true;
+        }
+
+        public async Task<bool> DataPartnerSearchIsComplete(string searchRequestKey)
+        {
+            string data = await _cache.Get($"{searchRequestKey}");
+            if (string.IsNullOrEmpty(data)) return true;
+            IEnumerable<JToken> tokens = JObject.Parse(data).SelectTokens("$.DataPartners[?(@.Completed == false)].Completed");
+            return !tokens.Any();
         }
     }
 }
