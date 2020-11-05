@@ -97,18 +97,34 @@ namespace Fams3Adapter.Dynamics.SearchApiRequest
             if (searchApiRequest.DataProviders != null)
             {
                 List<SSG_SearchapiRequestDataProvider> apiProviders = new List<SSG_SearchapiRequestDataProvider>();
-                foreach (SSG_SearchapiRequestDataProvider prov in searchApiRequest.DataProviders)
+
+                foreach (var dp in providers)
                 {
-                    var provider = providers.FirstOrDefault(x => x.AdaptorName == prov.AdaptorName);
-                    if (provider != null)
+                    var included = searchApiRequest.DataProviders.FirstOrDefault(x => x.AdaptorName == dp.AdaptorName);
+                    if (included != null)
                     {
-                        prov.NumberOfRetries = provider.NumberOfRetries;
-                        prov.TimeBetweenRetries = provider.TimeBetweenRetries;
-                        prov.SearchSpeed = provider.SearchSpeed;
-                        prov.InCludeInWave = provider.InCludeInWave;
+                        included.NumberOfRetries = dp.NumberOfRetries;
+                        included.TimeBetweenRetries = dp.TimeBetweenRetries;
+                        included.SearchSpeed = dp.SearchSpeed;
+                        included.InCludeInWave = true;
+                        apiProviders.Add(included);
                     }
-                    apiProviders.Add(prov);
+                    else
+                    {
+                        apiProviders.Add(new SSG_SearchapiRequestDataProvider 
+                        { 
+                            InCludeInWave = false, 
+                            AdaptorName = dp.AdaptorName, 
+                            NumberOfRetries = dp.NumberOfRetries, 
+                            SearchSpeed = dp.SearchSpeed, 
+                            TimeBetweenRetries = dp.TimeBetweenRetries 
+                        });
+                    }
+
+                    
                 }
+
+                
                 searchApiRequest.DataProviders = apiProviders.ToArray();
             }
         }
