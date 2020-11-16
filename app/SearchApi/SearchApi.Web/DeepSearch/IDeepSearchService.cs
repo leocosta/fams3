@@ -1,4 +1,4 @@
-﻿using BcGov.Fams3.Redis;
+using BcGov.Fams3.Redis;
 using BcGov.Fams3.SearchApi.Contracts.Person;
 using BcGov.Fams3.SearchApi.Contracts.PersonSearch;
 using Microsoft.Extensions.Logging;
@@ -82,18 +82,17 @@ namespace SearchApi.Web.DeepSearch
         {
             try
             {
-                _logger.LogInformation($"Updating data partner as completed for {dataPartner} for {eventName} event - {searchRequestKey}");
+                
                 if (eventName.Equals(EventName.Completed) || eventName.Equals(EventName.Rejected))
                 {
+                    _logger.LogInformation($"Updating data partner as completed for {dataPartner} for {eventName} event.");
                     var searchRequest = JsonConvert.SerializeObject(await _cacheService.GetRequest(searchRequestKey)).UpdateDataPartner(dataPartner);
                     await _cacheService.SaveRequest(searchRequest);
-                  
-                   
                 }
             }
             catch (Exception exception)
             {
-                _logger.LogError($"Update Data Partner Status Failed. [{eventName}] for {searchRequestKey}. [{exception.Message}]");
+                _logger.LogError($"Update Data Partner as completed Failed. [{eventName}] for {searchRequestKey}. [{exception.Message}]");
 
             }
         }
@@ -177,8 +176,6 @@ namespace SearchApi.Web.DeepSearch
 
                 }
 
-
-
             }
 
         }
@@ -202,12 +199,20 @@ namespace SearchApi.Web.DeepSearch
 
         private void ExtractIds(PersonSearchCompleted eventStatus, List<PersonalIdentifier> existingIds,string DataPartner, List<PersonalIdentifier>  foundId, PersonalIdentifierType[] paramsRegistry, IEnumerable<WaveSearchData> waveSearches, out IEnumerable<PersonalIdentifier> filteredExistingIdentifierForDataPartner, out IEnumerable<PersonalIdentifier> filteredNewFoundIdentifierForDataPartner)
         {
-            _logger.LogInformation($"{existingIds.Count()} Identifier exists");
+            List<PersonalIdentifier> existingIds = new List<PersonalIdentifier>();
+
+            foreach (var waveitem in waveSearches)
+            {
+                _logger.LogInformation($"Store all parameters {waveitem.DataPartner}");
+                waveitem.AllParameter.ForEach(p => existingIds.AddRange(p.Identifiers));
+            }
+
+            _logger.LogInformation($"Existing {existingIds.Count()} Identifier exists existingIds={JsonConvert.SerializeObject(existingIds)}");
             filteredExistingIdentifierForDataPartner = existingIds.Where(identifer => paramsRegistry.Contains(identifer.Type));
-            _logger.LogInformation($"{existingIds.Count()} Identifier matched the require types for {DataPartner}");
+            _logger.LogInformation($"{existingIds.Count()} Identifier matched the require types for {eventStatus.ProviderProfile.Name}");
 
 
-            _logger.LogInformation($"{foundId.Count()} Identifier was returned by {eventStatus.ProviderProfile.Name}");
+            _logger.LogInformation($"New found {foundId.Count()} Identifiers was returned by {eventStatus.ProviderProfile.Name}");
             filteredNewFoundIdentifierForDataPartner = foundId.Where(identifer => paramsRegistry.Contains(identifer.Type));
             _logger.LogInformation($"{filteredNewFoundIdentifierForDataPartner.Count()} returned Identifier matched the required types for {DataPartner}");
         }
@@ -235,15 +240,16 @@ namespace SearchApi.Web.DeepSearch
 
         public async Task<bool> IsWaveSearchReadyToFinalize(string searchRequestKey)
         {
+           
             var waveData = await GetWaveDataForSearch(searchRequestKey);
             if (waveData.Any())
             {
                 if (!await CurrentWaveIsCompleted(searchRequestKey))
                     return false;
 
-                if (waveData.Any(x => x.CurrentWave == _deepSearchOptions.MaxWaveCount) || NoNewParameter(waveData))
+                if (waveData.All(x => x.CurrentWave == _deepSearchOptions.MaxWaveCount) || NoNewParameter(waveData))
                 {
-                    _logger.Log(LogLevel.Information, $"{searchRequestKey} no new wave to initiate");
+                    _logger.Log(LogLevel.Information, $"all reach Max wave or no new parameters.");
                     return true;
                 }
                 else
@@ -263,13 +269,13 @@ namespace SearchApi.Web.DeepSearch
                             var waveMetaData = await _cacheService.Get(cacheKey);
                             if (waveMetaData != null)
                             {
-                                _logger.Log(LogLevel.Information, $"{searchRequestKey} has an active wave but no new parameter");
+                                _logger.Log(LogLevel.Information, $"{cacheKey} has an active wave but no new parameter");
                                 WaveSearchData metaData = JsonConvert.DeserializeObject<WaveSearchData>(waveMetaData);
-                                _logger.Log(LogLevel.Information, $"{searchRequestKey} Current Metadata Wave : {metaData.CurrentWave}");
+                                _logger.Log(LogLevel.Information, $"{cacheKey} Current Metadata Wave : {metaData.CurrentWave}");
                                 metaData.CurrentWave++;
                                 metaData.NewParameter = null;
                                 await _cacheService.Save(cacheKey, metaData);
-                                _logger.Log(LogLevel.Information, $"{searchRequestKey} New wave {metaData.CurrentWave} saved");
+                                _logger.Log(LogLevel.Information, $"{cacheKey} New wave {metaData.CurrentWave} saved");
                             }
                         }
                     }

@@ -67,7 +67,7 @@ namespace SearchApi.Web.Controllers
                     searchRequestId = Guid.NewGuid();
                 }
 
-                _logger.LogInformation($"Successfully received new search request [{searchRequestId}].");
+                _logger.LogInformation($"Received new search request.");
 
                 _tracer.ActiveSpan.SetTag("searchRequestId", $"{searchRequestId}");
 
@@ -80,10 +80,8 @@ namespace SearchApi.Web.Controllers
                     DataPartners = personSearchRequest?.DataProviders.Select(x => new DataPartner { Name = x.Name, Completed = false, NumberOfRetries = x.NumberOfRetries, TimeBetweenRetries = x.TimeBetweenRetries, SearchSpeed = x.SearchSpeedType})
                 };
 
-                _logger.LogInformation($"Save Complete Request [{searchRequestId}] to cache. ");
+                _logger.LogInformation($"Save Request to cache. SearchRequest = " +JsonConvert.SerializeObject(searchRequest));
                 await _cacheService.SaveRequest(searchRequest);
-
-                _logger.LogDebug($"Attempting to publish ${nameof(PersonSearchOrdered)} to destination queue.");
 
                 await _dispatcher.Dispatch(personSearchRequest, searchRequestId);
 

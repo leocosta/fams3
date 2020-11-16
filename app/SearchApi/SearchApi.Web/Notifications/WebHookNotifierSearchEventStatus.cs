@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using SearchApi.Web.Configuration;
@@ -38,8 +38,6 @@ namespace SearchApi.Web.Notifications
             var webHookName = "PersonSearch";
             foreach (var webHook in _searchApiOptions.WebHooks)
             {
-                _logger.LogDebug(
-                   $"The webHook {webHookName} notification is attempting to send status {eventName} event for {webHook.Name} webhook.");
 
                 if (!URLHelper.TryCreateUri(webHook.Uri, eventName, $"{searchRequestKey}", out var endpoint))
                 {
@@ -68,7 +66,7 @@ namespace SearchApi.Web.Notifications
                     }
                     else
                     {
-                        _logger.LogInformation(JsonConvert.SerializeObject(eventStatus));
+                        _logger.LogInformation($"Send event to Dynadaptor, event = {JsonConvert.SerializeObject(eventStatus)}.");
                         content = new StringContent(JsonConvert.SerializeObject(eventStatus));
                     }
 
@@ -88,12 +86,12 @@ namespace SearchApi.Web.Notifications
                         return;
                     }
                     _logger.LogInformation(
-                        $"The webHook {webHookName} notification has executed status {eventName} successfully for {webHook.Name} webHook.");
+                        $"The webHook {webHookName} notification has notified {eventName} successfully.");
                 }
 
                 catch (Exception exception)
                 {
-                    _logger.LogError($"The webHook {webHookName} notification failed for status {eventName} for {webHook.Name} webHook. [{exception.Message}]");
+                    _logger.LogError($"The webHook {webHookName} notification failed for {eventName}. [{exception.Message}]");
                 }
             }
             if (EventName.Finalized.Equals(eventName))

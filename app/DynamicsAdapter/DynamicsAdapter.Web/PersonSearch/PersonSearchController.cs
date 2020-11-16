@@ -63,7 +63,7 @@ namespace DynamicsAdapter.Web.PersonSearch
                 using (LogContext.PushProperty("SearchRequestKey", personCompletedEvent?.SearchRequestKey))
                 using (LogContext.PushProperty("DataPartner", personCompletedEvent?.ProviderProfile.Name))
                 {
-                    _logger.LogInformation("Received Person search completed event");
+                    _logger.LogInformation("Received Completed event");
                     var cts = new CancellationTokenSource();
                     SSG_SearchApiRequest request = await _register.GetSearchApiRequest(key);
                     //update completed event
@@ -136,7 +136,7 @@ namespace DynamicsAdapter.Web.PersonSearch
             using (LogContext.PushProperty("SearchRequestKey", personAcceptedEvent?.SearchRequestKey))
             using (LogContext.PushProperty("DataPartner", personAcceptedEvent?.ProviderProfile.Name))
             {
-                _logger.LogInformation($"Received new event for SearchApiRequest");
+                _logger.LogInformation($"Received Accepted Event");
 
                 var token = new CancellationTokenSource();
 
@@ -175,7 +175,7 @@ namespace DynamicsAdapter.Web.PersonSearch
             using (LogContext.PushProperty("SearchRequestKey", personFailedEvent?.SearchRequestKey))
             using (LogContext.PushProperty("DataPartner", personFailedEvent?.ProviderProfile.Name))
             {
-                _logger.LogInformation($"Received new event for SearchApiRequest.");
+                _logger.LogInformation($"Received Failed Event.");
 
                 var token = new CancellationTokenSource();
 
@@ -214,7 +214,7 @@ namespace DynamicsAdapter.Web.PersonSearch
             using (LogContext.PushProperty("SearchRequestKey", personInformationEvent?.SearchRequestKey))
             using (LogContext.PushProperty("DataPartner", personInformationEvent?.ProviderProfile.Name))
             {
-                _logger.LogInformation($"Received new event for SearchApiRequest.");
+                _logger.LogInformation($"Received Information Received Event.");
 
                 var token = new CancellationTokenSource();
 
@@ -248,7 +248,7 @@ namespace DynamicsAdapter.Web.PersonSearch
         {
             using (LogContext.PushProperty("SearchRequestKey", personFinalizedEvent?.SearchRequestKey))
             {
-                _logger.LogInformation($"Received new event for SearchApiRequest.");
+                _logger.LogInformation($"Received Finalized Event.");
 
                 var token = new CancellationTokenSource();
 
@@ -286,17 +286,17 @@ namespace DynamicsAdapter.Web.PersonSearch
             using (LogContext.PushProperty("SearchRequestKey", personRejectedEvent?.SearchRequestKey))
             using (LogContext.PushProperty("DataPartner", personRejectedEvent?.ProviderProfile.Name))
             {
-                _logger.LogInformation($"Received new event for SearchApiRequest [{key}]");
+                _logger.LogInformation($"Received Rejected Event");
 
                 var token = new CancellationTokenSource();
 
                 try
                 {
                     var searchApiEvent = _mapper.Map<SSG_SearchApiEvent>(personRejectedEvent);
-                    _logger.LogDebug($"Attempting to create a new event for SearchApiRequest [{key}]");
+                    _logger.LogDebug($"Attempting to create a new event for SearchApiRequest ");
                     SSG_SearchApiRequest request = await _register.GetSearchApiRequest(key);
                     await _searchApiRequestService.AddEventAsync(request.SearchApiRequestId, searchApiEvent, token.Token);
-                    _logger.LogInformation($"Successfully created rejected event for SearchApiRequest [{key}]");
+                    _logger.LogInformation($"Successfully created rejected event for SearchApiRequest");
 
 
                 }
@@ -322,7 +322,7 @@ namespace DynamicsAdapter.Web.PersonSearch
             using (LogContext.PushProperty("SearchRequestKey", personSearchSubmitted?.SearchRequestKey))
             using (LogContext.PushProperty("DataPartner", personSearchSubmitted?.ProviderProfile.Name))
             {
-                _logger.LogInformation($"Received new event for SearchApiRequest");
+                _logger.LogInformation($"Received Submitted Event");
 
                 var token = new CancellationTokenSource();
 
